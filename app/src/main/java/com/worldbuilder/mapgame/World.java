@@ -77,7 +77,6 @@ public class World {
         }
     }
 
-   @RequiresApi(api = Build.VERSION_CODES.N)
    public void removeDead() {
        Iterator<Plant> plantIterator = plants.iterator();
        while (plantIterator.hasNext()) {
