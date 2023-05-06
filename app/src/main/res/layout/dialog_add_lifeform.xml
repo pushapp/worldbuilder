@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center"
+    android:background="@drawable/rounded_dialog">
+
+
+<!--    <TextView-->
+<!--        android:id="@+id/title"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="Add Lifeform"-->
+<!--        android:textAppearance="@style/TextAppearance.AppCompat.Large"-->
+<!--        android:textColor="@color/dialogText"/>-->
+
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Plant"
+            android:textAlignment="center"
+            android:textColor="@color/dialogText"
+            android:background="@android:color/white"
+            android:id="@+id/planttv"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Animal"
+            android:textAlignment="center"
+            android:textColor="@color/dialogText"
+            android:background="@color/colorPrimary"
+            android:id="@+id/animaltv"/>
+
+    </LinearLayout>
+    <ImageView
+        android:layout_width="80sp"
+        android:layout_height="80sp"
+        android:src="@drawable/grass"
+        android:layout_margin="20dp" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/cost"
+        android:text="Cost: 300"
+        android:textColor="@color/black"
+        android:textSize="20dp"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/lifespanlayout"
+        android:padding="8dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Life Span"
+            android:textAlignment="center"
+            android:textColor="@color/dialogText"/>
+        <SeekBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/lifespanseek"
+            android:progress="50"
+            android:thumbTint="@color/dialogText"
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/plantdispersionlayout"
+        android:padding="8dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Propagation Rate"
+            android:textAlignment="center"
+            android:textColor="@color/dialogText"/>
+        <SeekBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/plantdispersion"
+            android:progress="50"
+            android:thumbTint="@color/dialogText"
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/seedDistancelayout"
+        android:padding="8dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Seeding Max Distance"
+            android:textAlignment="center"
+            android:textColor="@color/dialogText"/>
+        <SeekBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/seedDistanceseek"
+            android:progress="50"
+            android:thumbTint="@color/dialogText"
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/elevationlayout"
+        android:padding="8dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Habitat Elevation"
+            android:textAlignment="center"
+            android:textColor="@color/dialogText"/>
+        <SeekBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/elevationHabitatseek"
+            android:progress="50"
+            android:thumbTint="@color/dialogText"
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/speedlayout"
+        android:visibility="gone"
+        android:padding="8dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Speed"
+            android:textAlignment="center"
+            android:textColor="@color/dialogText"/>
+        <SeekBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/speedSeek"
+            android:progress="50"
+            android:thumbTint="@color/colorAccent"
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/foodTypeLayout"
+        android:visibility="gone"
+        android:padding="8dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="FoodType"
+            android:textAlignment="center"
+            android:textColor="@color/dialogText"/>
+        <Spinner
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/foodTypeSpinner"
+            android:progress="50"
+            android:entries="@array/food_types"
+            />
+    </LinearLayout>
+
+</LinearLayout>

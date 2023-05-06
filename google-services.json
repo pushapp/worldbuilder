@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "8413827566",
+    "firebase_url": "https://darwin-s-worldscape-default-rtdb.firebaseio.com",
+    "project_id": "darwin-s-worldscape",
+    "storage_bucket": "darwin-s-worldscape.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:8413827566:android:ee954c70a106c01e33beff",
+        "android_client_info": {
+          "package_name": "com.worldbuilder.mapgame"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "8413827566-70lsb45lvkjb6vj8886a493p0mmennf1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjpJhfA9hmnYLNANWyb97X4F39XSkK0_o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "8413827566-70lsb45lvkjb6vj8886a493p0mmennf1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
