@@ -19,13 +19,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.gson.Gson;
 import com.worldbuilder.mapgame.models.ItemCreationParams;
 import com.worldbuilder.mapgame.ui.dialogs.CreatePlantOrAnimalDialog;
+import com.worldbuilder.mapgame.ui.dialogs.CustomizeWorldDialog;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener {
+public class MainActivity extends AppCompatActivity implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener, CustomizeWorldDialog.CustomizeWorldDialogListener {
 
     SharedPreferences sharedPreferences;
     SharedPreferences.Editor editor;
@@ -34,7 +35,7 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
     ImageView[][] imageViews;
     Tile[][] tilemap;
     MapGenerator mapGenerator = new MapGenerator();
-    World world;
+    World world = null;
     private static final int width = 2000;
     private static final int height = 2000;
     private static final int timeSpeed = 1000; // 1 second
@@ -55,50 +56,18 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
 
         setContentView(R.layout.activity_main);
 
-        tilemap = mapGenerator.generateRandomMap(width, height);
-
-        mapIV = findViewById(R.id.mapIV);
-        Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);
-        mapIV.setImageBitmap(bitmap);
-
-        tilemap = MapUtils.reduceTileArray(tilemap, MapUtils.tileMapDivisor);
-        lifeformContainer = findViewById(R.id.lifeFormContainer);
-
-        RelativeLayout.LayoutParams containerLayoutParams = new RelativeLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());
-        lifeformContainer.setLayoutParams(containerLayoutParams);
-
-        lifeformContainer.setOnTouchListener((view, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                int x = (int) (event.getX() / Tile.getTileSize()) / MapUtils.tileMapDivisor;
-                int y = (int) (event.getY() / Tile.getTileSize()) / MapUtils.tileMapDivisor;
-                Log.d("debug", "IN ONTOUCH: x = " + x + "y = " + y);
-                lastTouchedPosition.setX(x);
-                lastTouchedPosition.setY(y);
-            }
-            return false;
-        });
-        lifeformContainer.setOnClickListener(view -> {
-            CreatePlantOrAnimalDialog dialog = new CreatePlantOrAnimalDialog(this);
-            dialog.show();
-        });
-
-
-        world = new World(tilemap, lifeformContainer);
+        CustomizeWorldDialog customizeWorldDialog = new CustomizeWorldDialog();
+        customizeWorldDialog.show(getSupportFragmentManager(), "customize_world_dialog");
 
         dpointTV = findViewById(R.id.dpoints);
-        dpointTV.setText("Darwin Points: " + world.getDarwinPoints());
+
 
         Button ResetButton = findViewById(R.id.resetButton);
         ResetButton.setOnClickListener(view -> {
-            tilemap = mapGenerator.generateRandomMap(width, height);
-            Bitmap bitmap1 = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);
-
-
-            mapIV.setImageBitmap(bitmap1);
-
-            tilemap = MapUtils.reduceTileArray(tilemap, MapUtils.tileMapDivisor);
             world.resetLifeforms();
-            world = new World(tilemap, lifeformContainer);
+
+            CustomizeWorldDialog customizeWorldDialog1 = new CustomizeWorldDialog();
+            customizeWorldDialog1.show(getSupportFragmentManager(), "customize_world_dialog");
         });
 
     }
@@ -108,7 +77,9 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
         @Override
         public void run() {
 
-            incrementTime(1);
+            if(world != null) {
+                incrementTime(1);
+            }
 
             handler.postDelayed(this, timeSpeed); // Update every 1000 milliseconds (1 second)
         }
@@ -224,5 +195,39 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
         }
         // Update the UI to display the new lifeform
         // ...
+    }
+
+    @Override
+    public void onCreateWorld(float waterFrequency, float mountainFrequency) {
+        tilemap = mapGenerator.generateRandomMap(width, height, waterFrequency, mountainFrequency);
+
+        mapIV = findViewById(R.id.mapIV);
+        Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);
+        mapIV.setImageBitmap(bitmap);
+
+        tilemap = MapUtils.reduceTileArray(tilemap, MapUtils.tileMapDivisor);
+        lifeformContainer = findViewById(R.id.lifeFormContainer);
+
+        RelativeLayout.LayoutParams containerLayoutParams = new RelativeLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());
+        lifeformContainer.setLayoutParams(containerLayoutParams);
+
+        lifeformContainer.setOnTouchListener((view, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                int x = (int) (event.getX() / Tile.getTileSize()) / MapUtils.tileMapDivisor;
+                int y = (int) (event.getY() / Tile.getTileSize()) / MapUtils.tileMapDivisor;
+                Log.d("debug", "IN ONTOUCH: x = " + x + "y = " + y);
+                lastTouchedPosition.setX(x);
+                lastTouchedPosition.setY(y);
+            }
+            return false;
+        });
+        lifeformContainer.setOnClickListener(view -> {
+            CreatePlantOrAnimalDialog dialog = new CreatePlantOrAnimalDialog(this);
+            dialog.show();
+        });
+
+
+        world = new World(tilemap, lifeformContainer);
+        dpointTV.setText("Darwin Points: " + world.getDarwinPoints());
     }
 }

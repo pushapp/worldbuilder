@@ -14,7 +14,8 @@ public class MapGenerator {
     float scale = .1f;
     private final int maxElevation = 100;
     private final int minElevation = 0;
-
+    float waterFreq = 0;
+    float mountainFreq = 0;
     public Bitmap generateRandomMapBitmap(int mapWidth, int mapHeight, int tileSize,Tile[][]map) {
 
         // Create an empty Bitmap with the size of the map
@@ -34,77 +35,28 @@ public class MapGenerator {
         return mapBitmap;
     }
 
-    public Tile[][] generateRandomMap(int mapWidth, int mapHeight) {
+    public Tile[][] generateRandomMap(int mapWidth, int mapHeight, float waterFreq, float mountainFreq) {
         perlinNoise = new PerlinNoise(System.currentTimeMillis());
         Tile[][] map = new Tile[mapWidth][mapHeight];
         float[][] elevations = new float[mapWidth][mapHeight];
-
+        Tile.TerrainType terrainType = Tile.TerrainType.DESERT;
+        float noiseValue = 0;
         for (int x = 0; x < mapWidth; x++) {
             for (int y = 0; y < mapHeight; y++) {
                 float noiseX = x * scale;
                 float noiseY = y * scale;
-
-                Tile.TerrainType terrainType = Tile.TerrainType.DESERT;
-                float noiseValue = 0;
-                if(x<mapWidth/2&& y<mapHeight/2){
-                    //first Quadrant
-                    noiseValue = perlinNoise.noise(noiseX, noiseY, .02f,1f);
-                    // Determine terrain type
-
-                    if (noiseValue < waterThreshold) {
-                        terrainType = Tile.TerrainType.WATER;
-                    }
-                    else if(noiseValue< beachThreshold){
-                        terrainType = Tile.TerrainType.BEACH;
-                    }
-                    else if (noiseValue < forestThreshold) {
-                        terrainType = Tile.TerrainType.FOREST;
-                    } else if (noiseValue < grasslandThreshold) {
-                        terrainType = Tile.TerrainType.GRASSLAND;
-                    } else {
-                        terrainType = Tile.TerrainType.MOUNTAIN;
-                    }
+                noiseValue = perlinNoise.noise(noiseX, noiseY, .03f, mountainFreq) - (waterFreq-.3f);
+                if (noiseValue < waterThreshold) {
+                    terrainType = Tile.TerrainType.WATER;
+                } else if (noiseValue < beachThreshold) {
+                    terrainType = Tile.TerrainType.BEACH;
+                } else if (noiseValue < forestThreshold) {
+                    terrainType = Tile.TerrainType.FOREST;
+                } else if (noiseValue < grasslandThreshold) {
+                    terrainType = Tile.TerrainType.GRASSLAND;
+                } else {
+                    terrainType = Tile.TerrainType.MOUNTAIN;
                 }
-                if(x>mapWidth/2&& y<mapHeight/2){
-                    //second Quadrant
-                    noiseValue = .5f + perlinNoise.noise(noiseX, noiseY, .01f,.8f);
-                    terrainType = Tile.TerrainType.DESERT;
-                }
-                if(x<mapWidth/2&& y>mapHeight/2){
-                    noiseValue = -.3f + perlinNoise.noise(noiseX, noiseY, .03f,1.5f);
-                    if (noiseValue < waterThreshold) {
-                        terrainType = Tile.TerrainType.WATER;
-                    }
-                    else if(noiseValue< beachThreshold){
-                        terrainType = Tile.TerrainType.BEACH;
-                    }
-                    else if (noiseValue < forestThreshold) {
-                        terrainType = Tile.TerrainType.FOREST;
-                    } else if (noiseValue < grasslandThreshold) {
-                        terrainType = Tile.TerrainType.GRASSLAND;
-                    } else {
-                        terrainType = Tile.TerrainType.MOUNTAIN;
-                    }
-                }
-                if(x>mapWidth/2&& y>mapHeight/2){
-                    //4th Quadrant
-                    noiseValue = .5f + perlinNoise.noise(noiseX, noiseY, .03f,1.5f);
-                    if (noiseValue < waterThreshold) {
-                        terrainType = Tile.TerrainType.WATER;
-                    }
-                    else if(noiseValue< beachThreshold){
-                        terrainType = Tile.TerrainType.BEACH;
-                    }
-                    else if (noiseValue < forestThreshold) {
-                        terrainType = Tile.TerrainType.FOREST;
-                    } else if (noiseValue < grasslandThreshold) {
-                        terrainType = Tile.TerrainType.GRASSLAND;
-                    } else {
-                        terrainType = Tile.TerrainType.MOUNTAIN;
-                    }
-                }
-
-
 
                 // Calculate elevation
                 elevations[x][y] =  ((noiseValue - waterThreshold) * (maxElevation - minElevation));
@@ -142,6 +94,7 @@ public class MapGenerator {
 
         return new float[]{slope, aspect};
     }
+
     private int applyHillshading(int baseColor, float normalizedElevation, float slope, float aspect) {
 
         if(normalizedElevation< waterThreshold*maxElevation){
@@ -170,6 +123,7 @@ public class MapGenerator {
 
         return shadedColor;
     }
+
     private int getColorFromElevation(float normalizedElevation) {
         int colorBlend = 20;
         int lightBrown = Color.rgb(210, 180, 140); // RGB values for light brown
