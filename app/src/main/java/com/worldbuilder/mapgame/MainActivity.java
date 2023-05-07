@@ -210,12 +210,16 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
             for (Position position1 : selectedPositions) {
                 if (params.isPlantSelected) {
                     int drawableResId = getRandomPlantDrawable();
-                    Plant plant1 = new Plant("", .5f, lifespan, position1, propagationRate, seedingDist, drawableResId, elevationHabitat, lifeFormID);
+                    String name = "plant_" + lifeFormID;
+
+                    Plant plant1 = new Plant(name, .5f, lifespan, position1, propagationRate, seedingDist, drawableResId, elevationHabitat, lifeFormID);
                     addLifeformImageView(plant1);
                     world.addLifeform(plant1);
                 } else {
                     int drawableResId = getRandomAnimalDrawable();
-                    Animal animal = new Animal("", speed, .5f, lifespan, position1, propagationRate, drawableResId, elevationHabitat, lifeFormID);
+                    String name = "animal_" + lifeFormID;
+
+                    Animal animal = new Animal(name, speed, .5f, lifespan, position1, propagationRate, drawableResId, elevationHabitat, lifeFormID);
                     animal.setFoodType(foodType);
                     addLifeformImageView(animal);
                     world.addLifeform(animal);

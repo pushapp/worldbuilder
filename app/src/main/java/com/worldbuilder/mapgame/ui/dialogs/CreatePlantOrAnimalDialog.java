@@ -27,7 +27,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
     }
 
     private static final float windowWidthRatio = .9f;
-    private static final float windowHeightRatio = .8f;
+    private static final float windowHeightRatio = .9f;
 
     private DialogAddLifeformBinding binding;
 
@@ -93,6 +93,16 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
             }
         });
 
+        //elevation habitat
+        binding.elevationHabitatseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
+                params.elevationProgress = progress;
+                //TODO: complete cost calculation
+                onCostsChanged();
+            }
+        });
+
         //life span
         binding.lifespanseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
             @Override
@@ -150,7 +160,6 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
     private void bindButtons() {
         binding.planttv.setOnClickListener(v -> selectPlantCreation());
         binding.animaltv.setOnClickListener(v -> selectAnimalCreation());
-        binding.buttonsLL.setVisibility(View.VISIBLE);
         binding.addBtn.setOnClickListener(v -> {
             listener.OnLifeformAddSelected(params);
             dismiss();
@@ -168,6 +177,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         binding.foodTypeLayout.setVisibility(View.GONE);
         binding.itemToCreateIv.setImageResource(Lifeforms.genericPlantDrawable);
 
+        binding.buttonsLL.setVisibility(View.VISIBLE);
         onCostsChanged();
     }
 
@@ -181,6 +191,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         binding.itemToCreateIv.setImageResource(Lifeforms.genericAnimalDrawable);
 
         params.cost = params.foodCost + params.propCost + params.speedCost + params.lifespanCost;
+        binding.buttonsLL.setVisibility(View.VISIBLE);
         onCostsChanged();
     }
 }
