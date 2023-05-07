@@ -1,35 +1,31 @@
 package com.worldbuilder.mapgame;
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
+import static com.worldbuilder.mapgame.Lifeforms.getRandomAnimalDrawable;
+import static com.worldbuilder.mapgame.Lifeforms.getRandomPlantDrawable;
 
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
-import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.SeekBar;
-import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.gson.Gson;
+import com.worldbuilder.mapgame.models.ItemCreationParams;
+import com.worldbuilder.mapgame.ui.dialogs.CreatePlantOrAnimalDialog;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener {
 
     SharedPreferences sharedPreferences;
     SharedPreferences.Editor editor;
@@ -39,9 +35,9 @@ public class MainActivity extends AppCompatActivity {
     Tile[][] tilemap;
     MapGenerator mapGenerator = new MapGenerator();
     World world;
-    private static int width = 2000;
-    private static int height = 2000;
-    private static int timeSpeed = 1000; // 1 second
+    private static final int width = 2000;
+    private static final int height = 2000;
+    private static final int timeSpeed = 1000; // 1 second
 
     private int lifeFormID = 1;
 
@@ -53,25 +49,6 @@ public class MainActivity extends AppCompatActivity {
     private ImageView mapIV;
     private RelativeLayout lifeformContainer;
 
-    int[] animalDrawables = {
-            R.drawable.goat,
-            R.drawable.pig,
-            R.drawable.cat,
-            R.drawable.monkey,
-            R.drawable.greyanimal
-            // ...
-    };
-
-    // Plant drawable resource IDs
-    int[] plantDrawables = {
-            R.drawable.yellowcactus,
-            R.drawable.grass,
-            R.drawable.blueflower,
-            R.drawable.redflower,
-            R.drawable.sprout
-            // ...
-    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,8 +59,6 @@ public class MainActivity extends AppCompatActivity {
 
         mapIV = findViewById(R.id.mapIV);
         Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);
-
-
         mapIV.setImageBitmap(bitmap);
 
         tilemap = MapUtils.reduceTileArray(tilemap, MapUtils.tileMapDivisor);
@@ -102,7 +77,10 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-        lifeformContainer.setOnClickListener(view -> showAddLifeformDialog(lastTouchedPosition));
+        lifeformContainer.setOnClickListener(view -> {
+            CreatePlantOrAnimalDialog dialog = new CreatePlantOrAnimalDialog(this);
+            dialog.show();
+        });
 
 
         world = new World(tilemap, lifeformContainer);
@@ -111,20 +89,16 @@ public class MainActivity extends AppCompatActivity {
         dpointTV.setText("Darwin Points: " + world.getDarwinPoints());
 
         Button ResetButton = findViewById(R.id.resetButton);
-        ResetButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                tilemap = mapGenerator.generateRandomMap(width, height);
-                mapIV = findViewById(R.id.mapIV);
-                Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);
+        ResetButton.setOnClickListener(view -> {
+            tilemap = mapGenerator.generateRandomMap(width, height);
+            Bitmap bitmap1 = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);
 
 
-                mapIV.setImageBitmap(bitmap);
+            mapIV.setImageBitmap(bitmap1);
 
-                tilemap = MapUtils.reduceTileArray(tilemap, MapUtils.tileMapDivisor);
-                world.resetLifeforms();
-                world = new World(tilemap, lifeformContainer);
-            }
+            tilemap = MapUtils.reduceTileArray(tilemap, MapUtils.tileMapDivisor);
+            world.resetLifeforms();
+            world = new World(tilemap, lifeformContainer);
         });
 
     }
@@ -150,226 +124,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        handler.removeCallbacks(updateTask);
+        handler.removeCallbacksAndMessages(null);
         Log.d("Debug", "onPause() called");
-    }
-
-
-    private void showAddLifeformDialog(Position position) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        LayoutInflater inflater = getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_add_lifeform, null);
-        builder.setView(dialogView);
-
-        TextView costTV = dialogView.findViewById(R.id.cost);
-
-
-        final int[] seedDistCost = {50};
-        final int[] lifespanCost = {50};
-        final int[] speedCost = {50};
-        final int[] propCost = {100};
-        final int[] foodCost = {1000};
-        final int[] cost = {300};
-
-        costTV.setText("Cost: " + cost[0]);
-
-        final boolean[] isPlant = {true};
-        TextView planttv = dialogView.findViewById(R.id.planttv);
-        TextView animaltv = dialogView.findViewById(R.id.animaltv);
-
-        //seedDist
-        SeekBar seedingDistSeek = dialogView.findViewById(R.id.seedDistanceseek);
-        seedingDistSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                seedDistCost[0] = i;
-
-                cost[0] = seedDistCost[0] + propCost[0] + lifespanCost[0] + 100;
-                costTV.setText("Cost: " + cost[0]);
-
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
-        LinearLayout seedDistLayout = dialogView.findViewById(R.id.seedDistancelayout);
-
-        //food
-        Spinner foodTypeSpin = dialogView.findViewById(R.id.foodTypeSpinner);
-        LinearLayout foodTypeLayout = dialogView.findViewById(R.id.foodTypeLayout);
-        foodTypeSpin.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                String selected = foodTypeSpin.getSelectedItem().toString();
-
-                if (selected.equals("Herbivore")) {
-                    foodCost[0] = 1000;
-                }
-                if (selected.equals("Carnivore")) {
-                    foodCost[0] = 10000;
-                }
-                cost[0] = foodCost[0] + propCost[0] + speedCost[0] + lifespanCost[0];
-                costTV.setText("Cost: " + cost[0]);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
-            }
-        });
-
-        SeekBar speedSeek = dialogView.findViewById(R.id.speedSeek);
-        LinearLayout speedLayout = dialogView.findViewById(R.id.speedlayout);
-        speedSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                speedCost[0] = i * 4;
-                cost[0] = foodCost[0] + propCost[0] + speedCost[0] + lifespanCost[0];
-                costTV.setText("Cost: " + cost[0]);
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
-
-        SeekBar elevation = dialogView.findViewById(R.id.elevationHabitatseek);
-
-
-        SeekBar lifespanSeek = dialogView.findViewById(R.id.lifespanseek);
-        lifespanSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                lifespanCost[0] = i;
-
-                if (isPlant[0]) {
-                    cost[0] = seedDistCost[0] + propCost[0] + lifespanCost[0] + 150;
-                } else {
-                    cost[0] = foodCost[0] + propCost[0] + speedCost[0] + lifespanCost[0];
-                }
-                costTV.setText("Cost: " + cost[0]);
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
-        // Get references to other input fields
-
-        SeekBar propagationSeek = dialogView.findViewById(R.id.plantdispersion);
-        propagationSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                propCost[0] = i * 2;
-
-                if (isPlant[0]) {
-                    cost[0] = seedDistCost[0] + propCost[0] + lifespanCost[0] + 150;
-                } else {
-                    cost[0] = foodCost[0] + propCost[0] + speedCost[0] + lifespanCost[0];
-                }
-                costTV.setText("Cost: " + cost[0]);
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
-
-
-        builder.setPositiveButton("Add", (dialog, which) -> {
-
-            if (world.getDarwinPoints() > cost[0]) {
-                int lifespan = lifespanSeek.getProgress();
-                int propagationRate = (propagationSeek.getProgress() / 20) + 1;
-                int elevationHabitat = elevation.getProgress();
-                int seedingDist = (seedingDistSeek.getProgress() / 5) + 1;
-                String foodType = foodTypeSpin.getSelectedItem().toString();
-                int speed = (speedSeek.getProgress() / 20) + 1;
-                // Get values from other input fields
-
-                Random random = new Random();
-                int drawablerand = random.nextInt(5);
-                List<Position> positions = MapUtils.generateSurroundingPositions(position, tilemap, false, 1, 3);
-
-                List<Position> selectedPositions = MapUtils.getRandomPositions(positions, 5);
-                lifeFormID++;
-                //generate 5 of the lifeforms
-                Log.d("Debug", "Positions generated: " + positions.size());
-
-                if (positions.size() > 4) {
-                    world.setDarwinPoints(world.darwinPoints - cost[0]);
-                    updateDarwinTV(world);
-
-                    for (Position position1 : selectedPositions) {
-                        if (isPlant[0]) {
-
-                            Plant plant1 = new Plant("", .5f, lifespan, position1, propagationRate, seedingDist, plantDrawables[drawablerand], elevationHabitat, lifeFormID);
-                            addLifeformImageView(plant1);
-                            world.addLifeform(plant1);
-                        } else {
-                            Animal animal = new Animal("", speed, .5f, lifespan, position1, propagationRate, animalDrawables[drawablerand], elevationHabitat, lifeFormID);
-                            animal.setFoodType(foodType);
-                            addLifeformImageView(animal);
-                            world.addLifeform(animal);
-                        }
-                    }
-                }
-            }
-            // Update the UI to display the new lifeform
-            // ...
-        });
-
-
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-
-        AlertDialog dialog = builder.show();
-        dialogView.setBackgroundColor(Color.TRANSPARENT);
-
-        planttv.setOnClickListener(view -> {
-            planttv.setBackgroundColor(Color.WHITE);
-            animaltv.setBackgroundColor(Color.GRAY);
-            isPlant[0] = true;
-            seedDistLayout.setVisibility(View.VISIBLE);
-            speedLayout.setVisibility(View.GONE);
-            foodTypeLayout.setVisibility(View.GONE);
-
-
-        });
-        animaltv.setOnClickListener(view -> {
-            planttv.setBackgroundColor(Color.GRAY);
-            animaltv.setBackgroundColor(Color.WHITE);
-            isPlant[0] = false;
-            seedDistLayout.setVisibility(View.GONE);
-            speedLayout.setVisibility(View.VISIBLE);
-            foodTypeLayout.setVisibility(View.VISIBLE);
-            cost[0] = foodCost[0] + propCost[0] + speedCost[0] + lifespanCost[0];
-            costTV.setText("Cost: " + cost[0]);
-        });
     }
 
     private void incrementTime(int steps) {
@@ -428,4 +184,45 @@ public class MainActivity extends AppCompatActivity {
         dpointTV.setText("$" + world.getDarwinPoints() + " Darwin");
     }
 
+    @Override
+    public void OnLifeformAddSelected(ItemCreationParams params) {
+        if (params.cost > world.getDarwinPoints()) return;
+
+        int lifespan = params.lifeSpanProgress;
+        int propagationRate = (params.propagationRateProgress / 20) + 1;
+        int elevationHabitat = params.elevationProgress;
+        int seedingDist = (params.seedingDistanceProgress / 5) + 1;
+        String foodType = params.selectedFoodType;
+        int speed = (params.seedSpeedProgress / 20) + 1;
+        // Get values from other input fields
+
+        List<Position> positions = MapUtils.generateSurroundingPositions(lastTouchedPosition, tilemap, false, 1, 3);
+
+        List<Position> selectedPositions = MapUtils.getRandomPositions(positions, 5);
+        lifeFormID++;
+        //generate 5 of the lifeforms
+        Log.d("Debug", "Positions generated: " + positions.size());
+
+        if (positions.size() > 4) {
+            world.setDarwinPoints(world.darwinPoints - params.cost);
+            updateDarwinTV(world);
+
+            for (Position position1 : selectedPositions) {
+                if (params.isPlantSelected) {
+                    int drawableResId = getRandomPlantDrawable();
+                    Plant plant1 = new Plant("", .5f, lifespan, position1, propagationRate, seedingDist, drawableResId, elevationHabitat, lifeFormID);
+                    addLifeformImageView(plant1);
+                    world.addLifeform(plant1);
+                } else {
+                    int drawableResId = getRandomAnimalDrawable();
+                    Animal animal = new Animal("", speed, .5f, lifespan, position1, propagationRate, drawableResId, elevationHabitat, lifeFormID);
+                    animal.setFoodType(foodType);
+                    addLifeformImageView(animal);
+                    world.addLifeform(animal);
+                }
+            }
+        }
+        // Update the UI to display the new lifeform
+        // ...
+    }
 }
