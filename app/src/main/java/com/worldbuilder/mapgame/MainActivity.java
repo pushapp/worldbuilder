@@ -1,13 +1,11 @@
 package com.worldbuilder.mapgame;
 
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -23,8 +21,6 @@ import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
@@ -52,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private Map<Plant, ImageView> plantImageViews = new HashMap<>();
     private Map<Animal, ImageView> animalImageViews = new HashMap<>();
 
-    private Position lastTouchedPosition = new Position(0,0);
+    private Position lastTouchedPosition = new Position(0, 0);
 
     private ImageView mapIV;
     private RelativeLayout lifeformContainer;
@@ -79,15 +75,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
 
-        FirebaseApp.initializeApp(this);
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-            tilemap = mapGenerator.generateRandomMap(width, height);
+        tilemap = mapGenerator.generateRandomMap(width, height);
 
         mapIV = findViewById(R.id.mapIV);
-        Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width,height,Tile.getTileSize(),tilemap);
+        Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);
 
 
         mapIV.setImageBitmap(bitmap);
@@ -98,28 +92,20 @@ public class MainActivity extends AppCompatActivity {
         RelativeLayout.LayoutParams containerLayoutParams = new RelativeLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());
         lifeformContainer.setLayoutParams(containerLayoutParams);
 
-        lifeformContainer.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN){
-                    int x = (int)(event.getX()/Tile.getTileSize())/ MapUtils.tileMapDivisor;
-                    int y = (int)(event.getY()/Tile.getTileSize())/ MapUtils.tileMapDivisor;
-                    Log.d("debug", "IN ONTOUCH: x = " + x + "y = " + y);
-                    lastTouchedPosition.setX(x);
-                    lastTouchedPosition.setY(y);
-                }
-                return false;
+        lifeformContainer.setOnTouchListener((view, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                int x = (int) (event.getX() / Tile.getTileSize()) / MapUtils.tileMapDivisor;
+                int y = (int) (event.getY() / Tile.getTileSize()) / MapUtils.tileMapDivisor;
+                Log.d("debug", "IN ONTOUCH: x = " + x + "y = " + y);
+                lastTouchedPosition.setX(x);
+                lastTouchedPosition.setY(y);
             }
+            return false;
         });
-        lifeformContainer.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showAddLifeformDialog(lastTouchedPosition);
-            }
-        });
+        lifeformContainer.setOnClickListener(view -> showAddLifeformDialog(lastTouchedPosition));
 
 
-        world = new World(tilemap,lifeformContainer);
+        world = new World(tilemap, lifeformContainer);
 
         dpointTV = findViewById(R.id.dpoints);
         dpointTV.setText("Darwin Points: " + world.getDarwinPoints());
@@ -128,16 +114,16 @@ public class MainActivity extends AppCompatActivity {
         ResetButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                tilemap = mapGenerator.generateRandomMap(width,height);
+                tilemap = mapGenerator.generateRandomMap(width, height);
                 mapIV = findViewById(R.id.mapIV);
-                Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width,height,Tile.getTileSize(),tilemap);
+                Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);
 
 
                 mapIV.setImageBitmap(bitmap);
 
                 tilemap = MapUtils.reduceTileArray(tilemap, MapUtils.tileMapDivisor);
                 world.resetLifeforms();
-                world = new World(tilemap,lifeformContainer);
+                world = new World(tilemap, lifeformContainer);
             }
         });
 
@@ -145,7 +131,6 @@ public class MainActivity extends AppCompatActivity {
 
     private final Handler handler = new Handler();
     private final Runnable updateTask = new Runnable() {
-        @RequiresApi(api = Build.VERSION_CODES.N)
         @Override
         public void run() {
 
@@ -224,10 +209,10 @@ public class MainActivity extends AppCompatActivity {
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 String selected = foodTypeSpin.getSelectedItem().toString();
 
-                if(selected.equals("Herbivore")){
+                if (selected.equals("Herbivore")) {
                     foodCost[0] = 1000;
                 }
-                if(selected.equals("Carnivore")){
+                if (selected.equals("Carnivore")) {
                     foodCost[0] = 10000;
                 }
                 cost[0] = foodCost[0] + propCost[0] + speedCost[0] + lifespanCost[0];
@@ -245,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
         speedSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                speedCost[0] = i *4;
+                speedCost[0] = i * 4;
                 cost[0] = foodCost[0] + propCost[0] + speedCost[0] + lifespanCost[0];
                 costTV.setText("Cost: " + cost[0]);
             }
@@ -270,10 +255,9 @@ public class MainActivity extends AppCompatActivity {
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                 lifespanCost[0] = i;
 
-                if(isPlant[0]) {
+                if (isPlant[0]) {
                     cost[0] = seedDistCost[0] + propCost[0] + lifespanCost[0] + 150;
-                }
-                else{
+                } else {
                     cost[0] = foodCost[0] + propCost[0] + speedCost[0] + lifespanCost[0];
                 }
                 costTV.setText("Cost: " + cost[0]);
@@ -295,12 +279,11 @@ public class MainActivity extends AppCompatActivity {
         propagationSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                propCost[0] = i*2;
+                propCost[0] = i * 2;
 
-                if(isPlant[0]) {
+                if (isPlant[0]) {
                     cost[0] = seedDistCost[0] + propCost[0] + lifespanCost[0] + 150;
-                }
-                else{
+                } else {
                     cost[0] = foodCost[0] + propCost[0] + speedCost[0] + lifespanCost[0];
                 }
                 costTV.setText("Cost: " + cost[0]);
@@ -320,9 +303,7 @@ public class MainActivity extends AppCompatActivity {
 
         builder.setPositiveButton("Add", (dialog, which) -> {
 
-            if(world.getDarwinPoints() > cost[0]) {
-
-
+            if (world.getDarwinPoints() > cost[0]) {
                 int lifespan = lifespanSeek.getProgress();
                 int propagationRate = (propagationSeek.getProgress() / 20) + 1;
                 int elevationHabitat = elevation.getProgress();
@@ -340,8 +321,8 @@ public class MainActivity extends AppCompatActivity {
                 //generate 5 of the lifeforms
                 Log.d("Debug", "Positions generated: " + positions.size());
 
-                if(positions.size()>4) {
-                    world.setDarwinPoints(world.darwinPoints-cost[0]);
+                if (positions.size() > 4) {
+                    world.setDarwinPoints(world.darwinPoints - cost[0]);
                     updateDarwinTV(world);
 
                     for (Position position1 : selectedPositions) {
@@ -369,36 +350,29 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog dialog = builder.show();
         dialogView.setBackgroundColor(Color.TRANSPARENT);
 
-        planttv.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                planttv.setBackgroundColor(Color.WHITE);
-                animaltv.setBackgroundColor(Color.GRAY);
-                isPlant[0] = true;
-                seedDistLayout.setVisibility(View.VISIBLE);
-                speedLayout.setVisibility(View.GONE);
-                foodTypeLayout.setVisibility(View.GONE);
+        planttv.setOnClickListener(view -> {
+            planttv.setBackgroundColor(Color.WHITE);
+            animaltv.setBackgroundColor(Color.GRAY);
+            isPlant[0] = true;
+            seedDistLayout.setVisibility(View.VISIBLE);
+            speedLayout.setVisibility(View.GONE);
+            foodTypeLayout.setVisibility(View.GONE);
 
 
-            }
         });
-        animaltv.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                planttv.setBackgroundColor(Color.GRAY);
-                animaltv.setBackgroundColor(Color.WHITE);
-                isPlant[0] = false;
-                seedDistLayout.setVisibility(View.GONE);
-                speedLayout.setVisibility(View.VISIBLE);
-                foodTypeLayout.setVisibility(View.VISIBLE);
-                cost[0] = foodCost[0] + propCost[0] + speedCost[0] + lifespanCost[0];
-                costTV.setText("Cost: " + cost[0]);
-            }
+        animaltv.setOnClickListener(view -> {
+            planttv.setBackgroundColor(Color.GRAY);
+            animaltv.setBackgroundColor(Color.WHITE);
+            isPlant[0] = false;
+            seedDistLayout.setVisibility(View.GONE);
+            speedLayout.setVisibility(View.VISIBLE);
+            foodTypeLayout.setVisibility(View.VISIBLE);
+            cost[0] = foodCost[0] + propCost[0] + speedCost[0] + lifespanCost[0];
+            costTV.setText("Cost: " + cost[0]);
         });
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    private void incrementTime(int steps){
+    private void incrementTime(int steps) {
         for (int step = 0; step < steps; step++) {
 
             List<Plant> plantsCopy = new ArrayList<>(world.getPlants());
@@ -441,7 +415,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void saveGame(){
+    private void saveGame() {
 //        String json = gson.toJson(world);
 //        String json1 = gson.toJson(tilemap);
 //        editor.putString("world",json);
@@ -449,7 +423,8 @@ public class MainActivity extends AppCompatActivity {
 //        editor.putString("tilemap", json1);
 //        editor.commit();
     }
-    private void updateDarwinTV(World world){
+
+    private void updateDarwinTV(World world) {
         dpointTV.setText("$" + world.getDarwinPoints() + " Darwin");
     }
 

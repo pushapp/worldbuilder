@@ -1,15 +1,12 @@
 package com.worldbuilder.mapgame;
 
-import android.os.Build;
-
-import androidx.annotation.RequiresApi;
+import androidx.annotation.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.IntStream;
 
 public class MapUtils {
     public static int tileMapDivisor = 10;
@@ -25,40 +22,50 @@ public class MapUtils {
         return distanceSquared <= thresholdSquared;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     public static Position findNewOffspringPosition(Tile[][] map, Animal parent) {
         int[] dx = {-1, 0, 1, -1, 1, -1, 0, 1};
         int[] dy = {-1, -1, -1, 0, 0, 1, 1, 1};
 
         // Shuffle the directions to try them in a random order
-        int[] indices = IntStream.range(0, dx.length).toArray();
-        for (int i = 0; i < indices.length; i++) {
-            int randomIndex = ThreadLocalRandom.current().nextInt(i, indices.length);
-            int temp = indices[i];
-            indices[i] = indices[randomIndex];
-            indices[randomIndex] = temp;
-        }
+        ArrayList<Integer> indices = createIndices(0, dx.length);
+        Collections.shuffle(indices);
 
-        for (int i = 0; i < indices.length; i++) {
-            int newX = parent.getPosition().getX() + dx[indices[i]];
-            int newY = parent.getPosition().getY() + dy[indices[i]];
+        for (int i : indices) {
+            int value = indices.get(i);
+            int newX = parent.getPosition().getX() + dx[value];
+            int newY = parent.getPosition().getY() + dy[value];
 
             if (newX >= 0 && newX < map.length && newY >= 0 && newY < map[0].length) {
                 Tile newTile = map[newX][newY];
-                boolean canPlaceOffspring = false;
 
-                if (Math.abs(parent.habitat - newTile.getElevation()) < 20 && newTile.getTerrainType() != Tile.TerrainType.WATER && newTile.getInHabitant() == null) {
+                if (Math.abs(parent.habitat - newTile.getElevation()) < 20 &&
+                        newTile.getTerrainType() != Tile.TerrainType.WATER && newTile.getInHabitant() == null) {
                     // Offspring can swim, so it can be placed on water tiles
-                    canPlaceOffspring = true;
-                }
-
-                if (canPlaceOffspring) {
                     return new Position(newX, newY);
                 }
             }
+
         }
 
         return null;
+    }
+
+    /**
+     * Creates integers in range of startIndex : endIndex
+     *
+     * @param startIndex start index, inclusive
+     * @param endIndex   end index, exclusive
+     */
+    @SuppressWarnings("SameParameterValue")
+    @VisibleForTesting
+    static ArrayList<Integer> createIndices(int startIndex, int endIndex) {
+        ArrayList<Integer> indices = new ArrayList<>();
+        assert startIndex < endIndex;
+
+        for (int index = startIndex; index < endIndex; index++) {
+            indices.add(index);
+        }
+        return indices;
     }
 
     public static Position findPlantSproutingPosition(Plant plant, Tile[][] map, int threshold, boolean isSwimmer) {
@@ -181,11 +188,11 @@ public class MapUtils {
     }
 
     public static int calculateXPosition(int xIndex) {
-        return (xIndex * Tile.getTileSize())* tileMapDivisor;
+        return (xIndex * Tile.getTileSize()) * tileMapDivisor;
     }
 
     public static int calculateYPosition(int yIndex) {
-        return (yIndex * Tile.getTileSize())* tileMapDivisor;
+        return (yIndex * Tile.getTileSize()) * tileMapDivisor;
     }
 
     public static Position findPositionTowardsTarget(Position start, Position end, int speed) {
@@ -214,6 +221,7 @@ public class MapUtils {
 
         return new Position(newX, newY);
     }
+
     public static Position findPositionAwayFromTarget(Position startPosition, Position targetPosition, int speed) {
         // Calculate the vector from the startPosition to the targetPosition
         int xDifference = targetPosition.getX() - startPosition.getX();

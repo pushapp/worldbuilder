@@ -1,12 +1,9 @@
 package com.worldbuilder.mapgame;
 
 import android.content.Context;
-import android.os.Build;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-
-import androidx.annotation.RequiresApi;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +53,6 @@ public class Animal extends Lifeform {
         energy = 50;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void update(Tile[][] map, World world, Context context) {
         // Implement animal-specific behavior, like movement or hunting
@@ -87,7 +83,6 @@ public class Animal extends Lifeform {
     // Animal-specific methods, if any
     // ...
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     public void procreate(Tile[][] map, World world, Context context) {
         ArrayList<Animal> temp = new ArrayList<>(world.getAnimals());
         for (Animal animal : temp) {
