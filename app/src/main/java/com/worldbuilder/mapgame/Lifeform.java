@@ -3,7 +3,9 @@ package com.worldbuilder.mapgame;
 import android.content.Context;
 import android.widget.ImageView;
 
-public abstract class Lifeform {
+import java.io.Serializable;
+
+public abstract class Lifeform implements Serializable {
 
 
     public int getLifeFormID() {
@@ -79,7 +81,7 @@ public abstract class Lifeform {
         this.imageView = imageView;
     }
 
-    protected ImageView imageView;
+    protected transient ImageView imageView;
 
     public Lifeform(String name, float camouflage, int lifespan, Position position,int propagationRate, int imgID, int habitat, int lifeFormID) {
         this.name = name;

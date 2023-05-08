@@ -168,6 +168,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         binding.foodTypeLayout.setVisibility(View.GONE);
         binding.itemToCreateIv.setImageResource(Lifeforms.genericPlantDrawable);
 
+        params.cost = params.propCost + params.seedDistCost + params.lifespanCost + 150;
         onCostsChanged();
     }
 

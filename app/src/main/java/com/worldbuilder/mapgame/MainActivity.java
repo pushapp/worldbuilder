@@ -56,19 +56,19 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
 
         setContentView(R.layout.activity_main);
 
-        CustomizeWorldDialog customizeWorldDialog = new CustomizeWorldDialog();
-        customizeWorldDialog.show(getSupportFragmentManager(), "customize_world_dialog");
+        //lifeformContainer OnClickListener is in this method
+        initobjects();
 
-        dpointTV = findViewById(R.id.dpoints);
-
-
-        Button ResetButton = findViewById(R.id.resetButton);
-        ResetButton.setOnClickListener(view -> {
-            world.resetLifeforms();
-
-            CustomizeWorldDialog customizeWorldDialog1 = new CustomizeWorldDialog();
-            customizeWorldDialog1.show(getSupportFragmentManager(), "customize_world_dialog");
-        });
+        Bitmap bitmap = SaveGame.loadBitmapFromInternalStorage(this,SaveGame.BITMAPFILE);
+        if (bitmap == null) {
+            //no Saved game... launch dialog to create new game
+            CustomizeWorldDialog customizeWorldDialog = new CustomizeWorldDialog();
+            customizeWorldDialog.show(getSupportFragmentManager(), "customize_world_dialog");
+        }else{
+            //There is game saved. load it
+            tilemap = SaveGame.loadTileArrayFromFile(this);
+            loadSavedGame(bitmap,tilemap);
+        }
 
     }
 
@@ -142,15 +142,6 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
 
     }
 
-    private void saveGame() {
-//        String json = gson.toJson(world);
-//        String json1 = gson.toJson(tilemap);
-//        editor.putString("world",json);
-//        editor.commit();
-//        editor.putString("tilemap", json1);
-//        editor.commit();
-    }
-
     private void updateDarwinTV(World world) {
         dpointTV.setText("$" + world.getDarwinPoints() + " Darwin");
     }
@@ -178,20 +169,24 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
             world.setDarwinPoints(world.darwinPoints - params.cost);
             updateDarwinTV(world);
 
+            int plantRes = getRandomPlantDrawable();
+            int animalRes = getRandomAnimalDrawable();
             for (Position position1 : selectedPositions) {
                 if (params.isPlantSelected) {
-                    int drawableResId = getRandomPlantDrawable();
-                    Plant plant1 = new Plant("", .5f, lifespan, position1, propagationRate, seedingDist, drawableResId, elevationHabitat, lifeFormID);
+                    Plant plant1 = new Plant("", .5f, lifespan, position1, propagationRate, seedingDist, plantRes, elevationHabitat, lifeFormID);
                     addLifeformImageView(plant1);
                     world.addLifeform(plant1);
                 } else {
-                    int drawableResId = getRandomAnimalDrawable();
-                    Animal animal = new Animal("", speed, .5f, lifespan, position1, propagationRate, drawableResId, elevationHabitat, lifeFormID);
+                    Animal animal = new Animal("", speed, .5f, lifespan, position1, propagationRate, animalRes, elevationHabitat, lifeFormID);
                     animal.setFoodType(foodType);
                     addLifeformImageView(animal);
                     world.addLifeform(animal);
                 }
             }
+
+            //save Tilemap
+            SaveGame.saveTileArrayToFile(this,tilemap);
+            SaveGame.saveToSharedPrefs(this,world);
         }
         // Update the UI to display the new lifeform
         // ...
@@ -200,16 +195,62 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
     @Override
     public void onCreateWorld(float waterFrequency, float mountainFrequency) {
         tilemap = mapGenerator.generateRandomMap(width, height, waterFrequency, mountainFrequency);
-
-        mapIV = findViewById(R.id.mapIV);
         Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);
+        SaveGame.saveBitmapToInternalStorage(this,bitmap,SaveGame.BITMAPFILE);
         mapIV.setImageBitmap(bitmap);
 
         tilemap = MapUtils.reduceTileArray(tilemap, MapUtils.tileMapDivisor);
-        lifeformContainer = findViewById(R.id.lifeFormContainer);
 
         RelativeLayout.LayoutParams containerLayoutParams = new RelativeLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());
         lifeformContainer.setLayoutParams(containerLayoutParams);
+
+        world = new World(tilemap, lifeformContainer);
+        dpointTV.setText("Darwin Points: " + world.getDarwinPoints());
+    }
+
+    public void loadSavedGame(Bitmap bitmap, Tile[][] map){
+        RelativeLayout.LayoutParams containerLayoutParams = new RelativeLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());
+        lifeformContainer.setLayoutParams(containerLayoutParams);
+
+        mapIV.setImageBitmap(bitmap);
+        world = new World(map, lifeformContainer);
+        List<Animal> animals = SaveGame.loadAnimalsFromPrefs(this);
+        for(Animal animal : animals){
+            Position pos = animal.getPosition();
+            map[pos.getX()][pos.getY()].setInHabitant(animal);
+            addLifeformImageView(animal);
+        }
+        List<Plant> plants = SaveGame.loadPlantsFromPrefs(this);
+        for(Plant plant : plants){
+            Position pos = plant.getPosition();
+            map[pos.getX()][pos.getY()].setInHabitant(plant);
+            addLifeformImageView(plant);
+        }
+        int darwin = SaveGame.loadDarwinFromPrefs(this);
+        world.setAnimals(animals);
+        world.setPlants(plants);
+        world.setDarwinPoints(darwin);
+
+        dpointTV.setText("Darwin Points: " + world.getDarwinPoints());
+        for(int x = 0; x < map.length; x++){
+            for(int y = 0; y < map[0].length; y++){
+                Log.d("debug", "in TM loop");
+                if(map[x][y].getInHabitant() != null){
+
+                    Lifeform lf = map[x][y].getInHabitant();
+                    Log.d("debug", "lf at "+ lf.getPosition().getX() +" , " + lf.getPosition().getY());
+                    world.addLifeform(lf);
+                    addLifeformImageView(lf);
+
+                }
+            }
+        }
+    }
+
+    private void initobjects(){
+        lifeformContainer = findViewById(R.id.lifeFormContainer);
+        mapIV = findViewById(R.id.mapIV);
+
 
         lifeformContainer.setOnTouchListener((view, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -226,8 +267,15 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
             dialog.show();
         });
 
+        dpointTV = findViewById(R.id.dpoints);
 
-        world = new World(tilemap, lifeformContainer);
-        dpointTV.setText("Darwin Points: " + world.getDarwinPoints());
+
+        Button ResetButton = findViewById(R.id.resetButton);
+        ResetButton.setOnClickListener(view -> {
+            world.resetLifeforms();
+
+            CustomizeWorldDialog customizeWorldDialog1 = new CustomizeWorldDialog();
+            customizeWorldDialog1.show(getSupportFragmentManager(), "customize_world_dialog");
+        });
     }
 }
