@@ -1,10 +1,7 @@
 package com.worldbuilder.mapgame;
 
-import android.os.Build;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-
-import androidx.annotation.RequiresApi;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -77,49 +74,50 @@ public class World {
         }
     }
 
-   public void removeDead() {
-       Iterator<Plant> plantIterator = plants.iterator();
-       while (plantIterator.hasNext()) {
-           Plant plant = plantIterator.next();
-           if (plant.getAge() >= plant.getLifespan()) {
-               ImageView plantImageView = plant.getImageView();
-               mapView.removeView(plantImageView);
-               plantIterator.remove();
-               map[plant.getPosition().getX()][plant.getPosition().getY()].setInHabitant(null);
-           }
-       }
+    public void removeDead() {
+        Iterator<Plant> plantIterator = plants.iterator();
+        while (plantIterator.hasNext()) {
+            Plant plant = plantIterator.next();
+            if (plant.getAge() >= plant.getLifespan()) {
+                ImageView plantImageView = plant.getImageView();
+                mapView.removeView(plantImageView);
+                plantIterator.remove();
+                map[plant.getPosition().getX()][plant.getPosition().getY()].setInHabitant(null);
+            }
+        }
 
 
+        Iterator<Animal> animalIterator = animals.iterator();
+        while (animalIterator.hasNext()) {
+            Animal animal = animalIterator.next();
+            if (animal.getAge() >= animal.getLifespan()) {
+                ImageView animalImageView = animal.getImageView();
+                mapView.removeView(animalImageView);
+                animalIterator.remove();
+                map[animal.getPosition().getX()][animal.getPosition().getY()].setInHabitant(null);
+            }
+        }
+    }
 
-       Iterator<Animal> animalIterator = animals.iterator();
-       while (animalIterator.hasNext()) {
-           Animal animal = animalIterator.next();
-           if (animal.getAge() >= animal.getLifespan()) {
-               ImageView animalImageView = animal.getImageView();
-               mapView.removeView(animalImageView);
-               animalIterator.remove();
-               map[animal.getPosition().getX()][animal.getPosition().getY()].setInHabitant(null);
-           }
-       }
-   }
-
-    public void resetLifeforms(){
-        for (Animal animal: animals){
+    public void resetLifeforms() {
+        for (Animal animal : animals) {
             mapView.removeView(animal.getImageView());
         }
-        for(Plant plant: plants){
+        for (Plant plant : plants) {
             mapView.removeView(plant.getImageView());
         }
     }
+
     public List<Plant> getNearbyPlants(Position position, int searchRange) {
         List<Plant> nearbyPlants = new ArrayList<>();
         for (Plant plant : plants) {
-                if (MapUtils.arePositionsClose(plant.getPosition(), position, searchRange)) {
-                    nearbyPlants.add( plant);
-                }
+            if (MapUtils.arePositionsClose(plant.getPosition(), position, searchRange)) {
+                nearbyPlants.add(plant);
             }
+        }
         return nearbyPlants;
     }
+
     public List<Animal> getNearbyAnimals(Position position, int searchRange) {
         List<Animal> nearbyAnimals = new ArrayList<>();
         for (Animal animal : animals) {

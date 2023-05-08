@@ -29,6 +29,11 @@ public class Position {
         this.y = y;
     }
 
+    public void set(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
     public double distance(Position other) {
         int dx = other.x - this.x;
         int dy = other.y - this.y;

@@ -8,7 +8,7 @@ import android.graphics.Paint;
 public class MapGenerator {
     private PerlinNoise perlinNoise;
     float waterThreshold = -.15f;      // 40% of the map will be water
-    float beachThreshold =0f;
+    float beachThreshold = 0f;
     float forestThreshold = .8f;     // 20% of the map will be forests
     float grasslandThreshold = 1.6f;  // 20% of the map will be grasslands
     float scale = .1f;
@@ -16,7 +16,8 @@ public class MapGenerator {
     private final int minElevation = 0;
     float waterFreq = 0;
     float mountainFreq = 0;
-    public Bitmap generateRandomMapBitmap(int mapWidth, int mapHeight, int tileSize,Tile[][]map) {
+
+    public Bitmap generateRandomMapBitmap(int mapWidth, int mapHeight, int tileSize, Tile[][] map) {
 
         // Create an empty Bitmap with the size of the map
         Bitmap mapBitmap = Bitmap.createBitmap(mapWidth * tileSize, mapHeight * tileSize, Bitmap.Config.ARGB_8888);
@@ -45,7 +46,7 @@ public class MapGenerator {
             for (int y = 0; y < mapHeight; y++) {
                 float noiseX = x * scale;
                 float noiseY = y * scale;
-                noiseValue = perlinNoise.noise(noiseX, noiseY, .03f, mountainFreq) - (waterFreq-.3f);
+                noiseValue = perlinNoise.noise(noiseX, noiseY, .03f, mountainFreq) - (waterFreq - .3f);
                 if (noiseValue < waterThreshold) {
                     terrainType = Tile.TerrainType.WATER;
                 } else if (noiseValue < beachThreshold) {
@@ -59,7 +60,7 @@ public class MapGenerator {
                 }
 
                 // Calculate elevation
-                elevations[x][y] =  ((noiseValue - waterThreshold) * (maxElevation - minElevation));
+                elevations[x][y] = ((noiseValue - waterThreshold) * (maxElevation - minElevation));
 
                 // Create and store the Tile object
                 map[x][y] = new Tile(terrainType, (int) elevations[x][y]);
@@ -73,7 +74,7 @@ public class MapGenerator {
                 float aspect = slopeAndAspect[1];
 
                 int baseColor = Color.rgb(244, 164, 96); // RGB values for sandy brown
-                if(map[x][y].getTerrainType() != Tile.TerrainType.DESERT){
+                if (map[x][y].getTerrainType() != Tile.TerrainType.DESERT) {
                     baseColor = getColorFromElevation(elevations[x][y]);
                 }
                 int shadedColor = applyHillshading(baseColor, elevations[x][y], slope, aspect);
@@ -97,7 +98,7 @@ public class MapGenerator {
 
     private int applyHillshading(int baseColor, float normalizedElevation, float slope, float aspect) {
 
-        if(normalizedElevation< waterThreshold*maxElevation){
+        if (normalizedElevation < waterThreshold * maxElevation) {
             return baseColor;
         }
         float lightAzimuth = 200.0f; // Light source direction in degrees
@@ -114,14 +115,12 @@ public class MapGenerator {
         float dotProduct = lightX * slope * (float) Math.cos(aspect) + lightY * slope * (float) Math.sin(aspect) + lightZ * (1 - slope);
         float shade = Math.max(0, dotProduct) * lightIntensity;
 
-        int shadedColor = Color.argb(
+        return Color.argb(
                 255,
                 (int) (Color.red(baseColor) * (1 - shade)),
                 (int) (Color.green(baseColor) * (1 - shade)),
                 (int) (Color.blue(baseColor) * (1 - shade))
         );
-
-        return shadedColor;
     }
 
     private int getColorFromElevation(float normalizedElevation) {
@@ -146,16 +145,13 @@ public class MapGenerator {
             } else if (landElevation < (forestThreshold - beachThreshold) * maxElevation) {
                 int index = (int) (((landElevation - (beachThreshold - waterThreshold) * maxElevation) / ((forestThreshold - beachThreshold) * maxElevation)) * colorBlend);
                 return forestToGrasslandColors[index];
-            }
-
-            else if (landElevation < (grasslandThreshold - forestThreshold) * maxElevation) {
+            } else if (landElevation < (grasslandThreshold - forestThreshold) * maxElevation) {
                 int index = (int) (((landElevation - (forestThreshold - waterThreshold) * maxElevation) / ((grasslandThreshold - forestThreshold) * maxElevation)) * colorBlend);
-                if(index<0){
+                if (index < 0) {
                     return highElevationColor;
                 }
                 return grasslandToHighElevationColors[index];
-            }
-            else {
+            } else {
                 return highElevationColor; // Mountain
             }
         }
