@@ -1,0 +1,706 @@
+Index: app/src/main/java/com/worldbuilder/mapgame/MainActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.worldbuilder.mapgame;\r\n\r\nimport static com.worldbuilder.mapgame.Lifeforms.getRandomAnimalDrawable;\r\nimport static com.worldbuilder.mapgame.Lifeforms.getRandomPlantDrawable;\r\n\r\nimport android.content.SharedPreferences;\r\nimport android.graphics.Bitmap;\r\nimport android.os.Bundle;\r\nimport android.os.Handler;\r\nimport android.util.Log;\r\nimport android.view.MotionEvent;\r\nimport android.widget.Button;\r\nimport android.widget.ImageView;\r\nimport android.widget.RelativeLayout;\r\nimport android.widget.TextView;\r\n\r\nimport androidx.appcompat.app.AppCompatActivity;\r\n\r\nimport com.google.gson.Gson;\r\nimport com.worldbuilder.mapgame.models.ItemCreationParams;\r\nimport com.worldbuilder.mapgame.ui.dialogs.CreatePlantOrAnimalDialog;\r\nimport com.worldbuilder.mapgame.ui.dialogs.CustomizeWorldDialog;\r\n\r\nimport java.util.ArrayList;\r\nimport java.util.HashMap;\r\nimport java.util.List;\r\nimport java.util.Map;\r\n\r\npublic class MainActivity extends AppCompatActivity implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener, CustomizeWorldDialog.CustomizeWorldDialogListener {\r\n\r\n    SharedPreferences sharedPreferences;\r\n    SharedPreferences.Editor editor;\r\n    Gson gson = new Gson();\r\n    TextView dpointTV;\r\n    ImageView[][] imageViews;\r\n    Tile[][] tilemap;\r\n    MapGenerator mapGenerator = new MapGenerator();\r\n    World world = null;\r\n    private static final int width = 2000;\r\n    private static final int height = 2000;\r\n    private static final int timeSpeed = 1000; // 1 second\r\n\r\n    private int lifeFormID = 1;\r\n\r\n    private Map<Plant, ImageView> plantImageViews = new HashMap<>();\r\n    private Map<Animal, ImageView> animalImageViews = new HashMap<>();\r\n\r\n    private Position lastTouchedPosition = new Position(0, 0);\r\n\r\n    private ImageView mapIV;\r\n    private RelativeLayout lifeformContainer;\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n\r\n        setContentView(R.layout.activity_main);\r\n\r\n        //lifeformContainer OnClickListener is in this method\r\n        initobjects();\r\n\r\n        Bitmap bitmap = SaveGame.loadBitmapFromInternalStorage(this,SaveGame.BITMAPFILE);\r\n        if (bitmap == null) {\r\n            //no Saved game... launch dialog to create new game\r\n            CustomizeWorldDialog customizeWorldDialog = new CustomizeWorldDialog();\r\n            customizeWorldDialog.show(getSupportFragmentManager(), \"customize_world_dialog\");\r\n        }else{\r\n            //There is game saved. load it\r\n            tilemap = SaveGame.loadTileArrayFromFile(this);\r\n            loadSavedGame(bitmap,tilemap);\r\n        }\r\n\r\n    }\r\n\r\n    private final Handler handler = new Handler();\r\n    private final Runnable updateTask = new Runnable() {\r\n        @Override\r\n        public void run() {\r\n\r\n            if(world != null) {\r\n                incrementTime(1);\r\n            }\r\n\r\n            handler.postDelayed(this, timeSpeed); // Update every 1000 milliseconds (1 second)\r\n        }\r\n    };\r\n\r\n    @Override\r\n    protected void onResume() {\r\n        super.onResume();\r\n        handler.post(updateTask);\r\n        Log.d(\"Debug\", \"onResume() called\");\r\n    }\r\n\r\n    @Override\r\n    protected void onPause() {\r\n        super.onPause();\r\n        handler.removeCallbacksAndMessages(null);\r\n        Log.d(\"Debug\", \"onPause() called\");\r\n    }\r\n\r\n    private void incrementTime(int steps) {\r\n        for (int step = 0; step < steps; step++) {\r\n\r\n            List<Plant> plantsCopy = new ArrayList<>(world.getPlants());\r\n            for (Plant plant : plantsCopy) {\r\n                plant.update(tilemap, world, this);\r\n            }\r\n\r\n            List<Animal> animalsCopy = new ArrayList<>(world.getAnimals());\r\n            for (Animal animal : animalsCopy) {\r\n                animal.update(tilemap, world, this);\r\n            }\r\n            // Remove dead lifeforms (age >= lifespan) from the lists\r\n            world.removeDead();\r\n            updateDarwinTV(world);\r\n        }\r\n    }\r\n\r\n    private void addLifeformImageView(Lifeform lifeform) {\r\n        ImageView lifeformImageView = new ImageView(this);\r\n\r\n        lifeformImageView.setImageResource(lifeform.imgID);\r\n\r\n        int xPosition = MapUtils.calculateXPosition(lifeform.getPosition().getX());\r\n        int yPosition = MapUtils.calculateYPosition(lifeform.getPosition().getY());\r\n        Log.d(\"LifeformPosition\", \"X: \" + xPosition + \", Y: \" + yPosition);\r\n\r\n        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(Lifeform.getImgSize(), Lifeform.getImgSize());\r\n        layoutParams.leftMargin = xPosition;\r\n        layoutParams.topMargin = yPosition;\r\n\r\n        lifeformImageView.setLayoutParams(layoutParams);\r\n\r\n        lifeformContainer.addView(lifeformImageView);\r\n\r\n        lifeform.setImageView(lifeformImageView);\r\n\r\n        int[] location = new int[2];\r\n        lifeformImageView.getLocationInWindow(location);\r\n        Log.d(\"LifeformImageView\", \"Position within RelativeLayout: X: \" + location[0] + \", Y: \" + location[1]);\r\n\r\n    }\r\n\r\n    private void updateDarwinTV(World world) {\r\n        dpointTV.setText(\"$\" + world.getDarwinPoints() + \" Darwin\");\r\n    }\r\n\r\n    @Override\r\n    public void OnLifeformAddSelected(ItemCreationParams params) {\r\n        if (params.cost > world.getDarwinPoints()) return;\r\n\r\n        int lifespan = params.lifeSpanProgress;\r\n        int propagationRate = (params.propagationRateProgress / 20) + 1;\r\n        int elevationHabitat = params.elevationProgress;\r\n        int seedingDist = (params.seedingDistanceProgress / 5) + 1;\r\n        String foodType = params.selectedFoodType;\r\n        int speed = (params.seedSpeedProgress / 20) + 1;\r\n        // Get values from other input fields\r\n\r\n        List<Position> positions = MapUtils.generateSurroundingPositions(lastTouchedPosition, tilemap, false, 1, 3);\r\n\r\n        List<Position> selectedPositions = MapUtils.getRandomPositions(positions, 5);\r\n        lifeFormID++;\r\n        //generate 5 of the lifeforms\r\n        Log.d(\"Debug\", \"Positions generated: \" + positions.size());\r\n\r\n        if (positions.size() > 4) {\r\n            world.setDarwinPoints(world.darwinPoints - params.cost);\r\n            updateDarwinTV(world);\r\n\r\n            int plantRes = getRandomPlantDrawable();\r\n            int animalRes = getRandomAnimalDrawable();\r\n            for (Position position1 : selectedPositions) {\r\n                if (params.isPlantSelected) {\r\n                    Plant plant1 = new Plant(\"\", .5f, lifespan, position1, propagationRate, seedingDist, plantRes, elevationHabitat, lifeFormID);\r\n                    addLifeformImageView(plant1);\r\n                    world.addLifeform(plant1);\r\n                } else {\r\n                    Animal animal = new Animal(\"\", speed, .5f, lifespan, position1, propagationRate, animalRes, elevationHabitat, lifeFormID);\r\n                    animal.setFoodType(foodType);\r\n                    addLifeformImageView(animal);\r\n                    world.addLifeform(animal);\r\n                }\r\n            }\r\n\r\n            //save Tilemap\r\n            SaveGame.saveTileArrayToFile(this,tilemap);\r\n            SaveGame.saveToSharedPrefs(this,world);\r\n        }\r\n        // Update the UI to display the new lifeform\r\n        // ...\r\n    }\r\n\r\n    @Override\r\n    public void onCreateWorld(float waterFrequency, float mountainFrequency) {\r\n        tilemap = mapGenerator.generateRandomMap(width, height, waterFrequency, mountainFrequency);\r\n        Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);\r\n        SaveGame.saveBitmapToInternalStorage(this,bitmap,SaveGame.BITMAPFILE);\r\n        mapIV.setImageBitmap(bitmap);\r\n\r\n        tilemap = MapUtils.reduceTileArray(tilemap, MapUtils.tileMapDivisor);\r\n\r\n        RelativeLayout.LayoutParams containerLayoutParams = new RelativeLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());\r\n        lifeformContainer.setLayoutParams(containerLayoutParams);\r\n\r\n        world = new World(tilemap, lifeformContainer);\r\n        dpointTV.setText(\"Darwin Points: \" + world.getDarwinPoints());\r\n    }\r\n\r\n    public void loadSavedGame(Bitmap bitmap, Tile[][] map){\r\n        RelativeLayout.LayoutParams containerLayoutParams = new RelativeLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());\r\n        lifeformContainer.setLayoutParams(containerLayoutParams);\r\n\r\n        mapIV.setImageBitmap(bitmap);\r\n        world = new World(map, lifeformContainer);\r\n        List<Animal> animals = SaveGame.loadAnimalsFromPrefs(this);\r\n        for(Animal animal : animals){\r\n            Position pos = animal.getPosition();\r\n            map[pos.getX()][pos.getY()].setInHabitant(animal);\r\n            addLifeformImageView(animal);\r\n        }\r\n        List<Plant> plants = SaveGame.loadPlantsFromPrefs(this);\r\n        for(Plant plant : plants){\r\n            Position pos = plant.getPosition();\r\n            map[pos.getX()][pos.getY()].setInHabitant(plant);\r\n            addLifeformImageView(plant);\r\n        }\r\n        int darwin = SaveGame.loadDarwinFromPrefs(this);\r\n        world.setAnimals(animals);\r\n        world.setPlants(plants);\r\n        world.setDarwinPoints(darwin);\r\n\r\n        dpointTV.setText(\"Darwin Points: \" + world.getDarwinPoints());\r\n        for(int x = 0; x < map.length; x++){\r\n            for(int y = 0; y < map[0].length; y++){\r\n                Log.d(\"debug\", \"in TM loop\");\r\n                if(map[x][y].getInHabitant() != null){\r\n\r\n                    Lifeform lf = map[x][y].getInHabitant();\r\n                    Log.d(\"debug\", \"lf at \"+ lf.getPosition().getX() +\" , \" + lf.getPosition().getY());\r\n                    world.addLifeform(lf);\r\n                    addLifeformImageView(lf);\r\n\r\n                }\r\n            }\r\n        }\r\n    }\r\n\r\n    private void initobjects(){\r\n        lifeformContainer = findViewById(R.id.lifeFormContainer);\r\n        mapIV = findViewById(R.id.mapIV);\r\n\r\n\r\n        lifeformContainer.setOnTouchListener((view, event) -> {\r\n            if (event.getAction() == MotionEvent.ACTION_DOWN) {\r\n                int x = (int) (event.getX() / Tile.getTileSize()) / MapUtils.tileMapDivisor;\r\n                int y = (int) (event.getY() / Tile.getTileSize()) / MapUtils.tileMapDivisor;\r\n                Log.d(\"debug\", \"IN ONTOUCH: x = \" + x + \"y = \" + y);\r\n                lastTouchedPosition.setX(x);\r\n                lastTouchedPosition.setY(y);\r\n            }\r\n            return false;\r\n        });\r\n        lifeformContainer.setOnClickListener(view -> {\r\n            CreatePlantOrAnimalDialog dialog = new CreatePlantOrAnimalDialog(this);\r\n            dialog.show();\r\n        });\r\n\r\n        dpointTV = findViewById(R.id.dpoints);\r\n\r\n\r\n        Button ResetButton = findViewById(R.id.resetButton);\r\n        ResetButton.setOnClickListener(view -> {\r\n            world.resetLifeforms();\r\n\r\n            CustomizeWorldDialog customizeWorldDialog1 = new CustomizeWorldDialog();\r\n            customizeWorldDialog1.show(getSupportFragmentManager(), \"customize_world_dialog\");\r\n        });\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/worldbuilder/mapgame/MainActivity.java b/app/src/main/java/com/worldbuilder/mapgame/MainActivity.java
+--- a/app/src/main/java/com/worldbuilder/mapgame/MainActivity.java	(revision d994846d7d5494052518a28228a1a9e82987a669)
++++ b/app/src/main/java/com/worldbuilder/mapgame/MainActivity.java	(date 1683514923090)
+@@ -26,7 +26,9 @@
+ import java.util.List;
+ import java.util.Map;
+ 
+-public class MainActivity extends AppCompatActivity implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener, CustomizeWorldDialog.CustomizeWorldDialogListener {
++public class MainActivity extends AppCompatActivity
++        implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener,
++        CustomizeWorldDialog.CustomizeWorldDialogListener {
+ 
+     SharedPreferences sharedPreferences;
+     SharedPreferences.Editor editor;
+@@ -56,19 +58,19 @@
+ 
+         setContentView(R.layout.activity_main);
+ 
+-        //lifeformContainer OnClickListener is in this method
+-        initobjects();
+-
+-        Bitmap bitmap = SaveGame.loadBitmapFromInternalStorage(this,SaveGame.BITMAPFILE);
+-        if (bitmap == null) {
+-            //no Saved game... launch dialog to create new game
+-            CustomizeWorldDialog customizeWorldDialog = new CustomizeWorldDialog();
+-            customizeWorldDialog.show(getSupportFragmentManager(), "customize_world_dialog");
+-        }else{
+-            //There is game saved. load it
+-            tilemap = SaveGame.loadTileArrayFromFile(this);
+-            loadSavedGame(bitmap,tilemap);
+-        }
++        CustomizeWorldDialog customizeWorldDialog = new CustomizeWorldDialog();
++        customizeWorldDialog.show(getSupportFragmentManager(), "customize_world_dialog");
++
++        dpointTV = findViewById(R.id.dpoints);
++
++
++        Button ResetButton = findViewById(R.id.resetButton);
++        ResetButton.setOnClickListener(view -> {
++            world.resetLifeforms();
++
++            CustomizeWorldDialog customizeWorldDialog1 = new CustomizeWorldDialog();
++            customizeWorldDialog1.show(getSupportFragmentManager(), "customize_world_dialog");
++        });
+ 
+     }
+ 
+@@ -77,7 +79,7 @@
+         @Override
+         public void run() {
+ 
+-            if(world != null) {
++            if (world != null) {
+                 incrementTime(1);
+             }
+ 
+@@ -142,6 +144,15 @@
+ 
+     }
+ 
++    private void saveGame() {
++//        String json = gson.toJson(world);
++//        String json1 = gson.toJson(tilemap);
++//        editor.putString("world",json);
++//        editor.commit();
++//        editor.putString("tilemap", json1);
++//        editor.commit();
++    }
++
+     private void updateDarwinTV(World world) {
+         dpointTV.setText("$" + world.getDarwinPoints() + " Darwin");
+     }
+@@ -169,24 +180,24 @@
+             world.setDarwinPoints(world.darwinPoints - params.cost);
+             updateDarwinTV(world);
+ 
+-            int plantRes = getRandomPlantDrawable();
+-            int animalRes = getRandomAnimalDrawable();
+             for (Position position1 : selectedPositions) {
+                 if (params.isPlantSelected) {
+-                    Plant plant1 = new Plant("", .5f, lifespan, position1, propagationRate, seedingDist, plantRes, elevationHabitat, lifeFormID);
++                    int drawableResId = getRandomPlantDrawable();
++                    String name = "plant_" + lifeFormID;
++
++                    Plant plant1 = new Plant(name, .5f, lifespan, position1, propagationRate, seedingDist, drawableResId, elevationHabitat, lifeFormID);
+                     addLifeformImageView(plant1);
+                     world.addLifeform(plant1);
+                 } else {
+-                    Animal animal = new Animal("", speed, .5f, lifespan, position1, propagationRate, animalRes, elevationHabitat, lifeFormID);
++                    int drawableResId = getRandomAnimalDrawable();
++                    String name = "animal_" + lifeFormID;
++
++                    Animal animal = new Animal(name, speed, .5f, lifespan, position1, propagationRate, drawableResId, elevationHabitat, lifeFormID);
+                     animal.setFoodType(foodType);
+                     addLifeformImageView(animal);
+                     world.addLifeform(animal);
+                 }
+             }
+-
+-            //save Tilemap
+-            SaveGame.saveTileArrayToFile(this,tilemap);
+-            SaveGame.saveToSharedPrefs(this,world);
+         }
+         // Update the UI to display the new lifeform
+         // ...
+@@ -195,63 +206,17 @@
+     @Override
+     public void onCreateWorld(float waterFrequency, float mountainFrequency) {
+         tilemap = mapGenerator.generateRandomMap(width, height, waterFrequency, mountainFrequency);
++
++        mapIV = findViewById(R.id.mapIV);
+         Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);
+-        SaveGame.saveBitmapToInternalStorage(this,bitmap,SaveGame.BITMAPFILE);
+         mapIV.setImageBitmap(bitmap);
+ 
+         tilemap = MapUtils.reduceTileArray(tilemap, MapUtils.tileMapDivisor);
+-
+-        RelativeLayout.LayoutParams containerLayoutParams = new RelativeLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());
+-        lifeformContainer.setLayoutParams(containerLayoutParams);
++        lifeformContainer = findViewById(R.id.lifeFormContainer);
+ 
+-        world = new World(tilemap, lifeformContainer);
+-        dpointTV.setText("Darwin Points: " + world.getDarwinPoints());
+-    }
+-
+-    public void loadSavedGame(Bitmap bitmap, Tile[][] map){
+         RelativeLayout.LayoutParams containerLayoutParams = new RelativeLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());
+         lifeformContainer.setLayoutParams(containerLayoutParams);
+ 
+-        mapIV.setImageBitmap(bitmap);
+-        world = new World(map, lifeformContainer);
+-        List<Animal> animals = SaveGame.loadAnimalsFromPrefs(this);
+-        for(Animal animal : animals){
+-            Position pos = animal.getPosition();
+-            map[pos.getX()][pos.getY()].setInHabitant(animal);
+-            addLifeformImageView(animal);
+-        }
+-        List<Plant> plants = SaveGame.loadPlantsFromPrefs(this);
+-        for(Plant plant : plants){
+-            Position pos = plant.getPosition();
+-            map[pos.getX()][pos.getY()].setInHabitant(plant);
+-            addLifeformImageView(plant);
+-        }
+-        int darwin = SaveGame.loadDarwinFromPrefs(this);
+-        world.setAnimals(animals);
+-        world.setPlants(plants);
+-        world.setDarwinPoints(darwin);
+-
+-        dpointTV.setText("Darwin Points: " + world.getDarwinPoints());
+-        for(int x = 0; x < map.length; x++){
+-            for(int y = 0; y < map[0].length; y++){
+-                Log.d("debug", "in TM loop");
+-                if(map[x][y].getInHabitant() != null){
+-
+-                    Lifeform lf = map[x][y].getInHabitant();
+-                    Log.d("debug", "lf at "+ lf.getPosition().getX() +" , " + lf.getPosition().getY());
+-                    world.addLifeform(lf);
+-                    addLifeformImageView(lf);
+-
+-                }
+-            }
+-        }
+-    }
+-
+-    private void initobjects(){
+-        lifeformContainer = findViewById(R.id.lifeFormContainer);
+-        mapIV = findViewById(R.id.mapIV);
+-
+-
+         lifeformContainer.setOnTouchListener((view, event) -> {
+             if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                 int x = (int) (event.getX() / Tile.getTileSize()) / MapUtils.tileMapDivisor;
+@@ -267,15 +232,8 @@
+             dialog.show();
+         });
+ 
+-        dpointTV = findViewById(R.id.dpoints);
+-
+ 
+-        Button ResetButton = findViewById(R.id.resetButton);
+-        ResetButton.setOnClickListener(view -> {
+-            world.resetLifeforms();
+-
+-            CustomizeWorldDialog customizeWorldDialog1 = new CustomizeWorldDialog();
+-            customizeWorldDialog1.show(getSupportFragmentManager(), "customize_world_dialog");
+-        });
++        world = new World(tilemap, lifeformContainer);
++        dpointTV.setText("Darwin Points: " + world.getDarwinPoints());
+     }
+ }
+\ No newline at end of file
+Index: app/src/main/java/com/worldbuilder/mapgame/Lifeform.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.worldbuilder.mapgame;\r\n\r\nimport android.content.Context;\r\nimport android.widget.ImageView;\r\n\r\nimport java.io.Serializable;\r\n\r\npublic abstract class Lifeform implements Serializable {\r\n\r\n\r\n    public int getLifeFormID() {\r\n        return lifeFormID;\r\n    }\r\n\r\n    public int lifeFormID = 0;\r\n\r\n    public Position getPosition() {\r\n        return position;\r\n    }\r\n\r\n    public void setPosition(Position position) {\r\n        this.position = position;\r\n    }\r\n\r\n    public Position position;\r\n\r\n    public int getAge() {\r\n        return age;\r\n    }\r\n\r\n    public void setAge(int age) {\r\n        this.age = age;\r\n    }\r\n\r\n    public float getCamouflage() {\r\n        return camouflage;\r\n    }\r\n\r\n    public void setCamouflage(float camouflage) {\r\n        this.camouflage = camouflage;\r\n    }\r\n\r\n\r\n    public String getName() {\r\n        return name;\r\n    }\r\n\r\n    protected String name;\r\n    protected int age;\r\n    protected float camouflage;\r\n\r\n    public int getPropagationRate() {\r\n        return propagationRate;\r\n    }\r\n\r\n    public void setPropagationRate(int propagationRate) {\r\n        this.propagationRate = propagationRate;\r\n    }\r\n\r\n    protected int propagationRate;\r\n\r\n    public int getLifespan() {\r\n        return lifespan;\r\n    }\r\n\r\n    public void setLifespan(int lifespan) {\r\n        this.lifespan = lifespan;\r\n    }\r\n\r\n    protected int lifespan;\r\n\r\n    protected int imgID;\r\n\r\n    protected int habitat;\r\n\r\n    public ImageView getImageView() {\r\n        return imageView;\r\n    }\r\n\r\n    public void setImageView(ImageView imageView) {\r\n        this.imageView = imageView;\r\n    }\r\n\r\n    protected transient ImageView imageView;\r\n\r\n    public Lifeform(String name, float camouflage, int lifespan, Position position,int propagationRate, int imgID, int habitat, int lifeFormID) {\r\n        this.name = name;\r\n        this.position = position;\r\n        this.age = 0;\r\n        this.camouflage = camouflage;\r\n        this.lifespan = lifespan;\r\n        this.propagationRate = propagationRate;\r\n        this.imgID = imgID;\r\n        this.habitat = habitat;\r\n    }\r\n\r\n    public abstract void update(Tile[][] map, World world, Context context);\r\n\r\n    public void incrementAge() {\r\n        this.age++;\r\n    }\r\n\r\n    public static int getImgSize(){\r\n        return 40;\r\n    }\r\n\r\n    // Getters and setters for the properties\r\n    // ...\r\n}\r\n\r\n\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/worldbuilder/mapgame/Lifeform.java b/app/src/main/java/com/worldbuilder/mapgame/Lifeform.java
+--- a/app/src/main/java/com/worldbuilder/mapgame/Lifeform.java	(revision d994846d7d5494052518a28228a1a9e82987a669)
++++ b/app/src/main/java/com/worldbuilder/mapgame/Lifeform.java	(date 1683514834297)
+@@ -3,9 +3,7 @@
+ import android.content.Context;
+ import android.widget.ImageView;
+ 
+-import java.io.Serializable;
+-
+-public abstract class Lifeform implements Serializable {
++public abstract class Lifeform {
+ 
+ 
+     public int getLifeFormID() {
+@@ -81,7 +79,7 @@
+         this.imageView = imageView;
+     }
+ 
+-    protected transient ImageView imageView;
++    protected ImageView imageView;
+ 
+     public Lifeform(String name, float camouflage, int lifespan, Position position,int propagationRate, int imgID, int habitat, int lifeFormID) {
+         this.name = name;
+Index: app/src/main/java/com/worldbuilder/mapgame/World.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.worldbuilder.mapgame;\r\n\r\nimport android.os.Build;\r\nimport android.widget.ImageView;\r\nimport android.widget.RelativeLayout;\r\n\r\nimport androidx.annotation.RequiresApi;\r\n\r\nimport java.util.ArrayList;\r\nimport java.util.Iterator;\r\nimport java.util.List;\r\n\r\npublic class World {\r\n    private Tile[][] map;\r\n\r\n    public List<Plant> getPlants() {\r\n        return plants;\r\n    }\r\n\r\n    public int getDarwinPoints() {\r\n        return darwinPoints;\r\n    }\r\n\r\n    public void setDarwinPoints(int darwinPoints) {\r\n        this.darwinPoints = darwinPoints;\r\n    }\r\n\r\n    public int darwinPoints = 1000;\r\n\r\n    public int getResCounter() {\r\n        return resCounter;\r\n    }\r\n\r\n    public void setResCounter(int resCounter) {\r\n        this.resCounter = resCounter;\r\n    }\r\n\r\n    public int resCounter = 0;\r\n\r\n    public void setPlants(List<Plant> plants) {\r\n        this.plants = plants;\r\n    }\r\n\r\n    public List<Animal> getAnimals() {\r\n        return animals;\r\n    }\r\n\r\n    public void setAnimals(List<Animal> animals) {\r\n        this.animals = animals;\r\n    }\r\n\r\n    private List<Plant> plants;\r\n    private List<Animal> animals;\r\n\r\n    public void setMapView(RelativeLayout mapView) {\r\n        this.mapView = mapView;\r\n    }\r\n\r\n    public RelativeLayout getMapView() {\r\n        return mapView;\r\n    }\r\n\r\n    private RelativeLayout mapView;\r\n\r\n    public World(Tile[][] map, RelativeLayout mapView) {\r\n        this.map = map;\r\n        this.plants = new ArrayList<>();\r\n        this.animals = new ArrayList<>();\r\n        this.mapView = mapView;\r\n    }\r\n\r\n    public void addLifeform(Lifeform lifeform) {\r\n        if (lifeform instanceof Plant) {\r\n            plants.add((Plant) lifeform);\r\n        } else if (lifeform instanceof Animal) {\r\n            animals.add((Animal) lifeform);\r\n        }\r\n    }\r\n\r\n   public void removeDead() {\r\n       Iterator<Plant> plantIterator = plants.iterator();\r\n       while (plantIterator.hasNext()) {\r\n           Plant plant = plantIterator.next();\r\n           if (plant.getAge() >= plant.getLifespan()) {\r\n               ImageView plantImageView = plant.getImageView();\r\n               mapView.removeView(plantImageView);\r\n               plantIterator.remove();\r\n               map[plant.getPosition().getX()][plant.getPosition().getY()].setInHabitant(null);\r\n           }\r\n       }\r\n\r\n\r\n\r\n       Iterator<Animal> animalIterator = animals.iterator();\r\n       while (animalIterator.hasNext()) {\r\n           Animal animal = animalIterator.next();\r\n           if (animal.getAge() >= animal.getLifespan()) {\r\n               ImageView animalImageView = animal.getImageView();\r\n               mapView.removeView(animalImageView);\r\n               animalIterator.remove();\r\n               map[animal.getPosition().getX()][animal.getPosition().getY()].setInHabitant(null);\r\n           }\r\n       }\r\n   }\r\n\r\n    public void resetLifeforms(){\r\n        for (Animal animal: animals){\r\n            mapView.removeView(animal.getImageView());\r\n        }\r\n        for(Plant plant: plants){\r\n            mapView.removeView(plant.getImageView());\r\n        }\r\n    }\r\n    public List<Plant> getNearbyPlants(Position position, int searchRange) {\r\n        List<Plant> nearbyPlants = new ArrayList<>();\r\n        for (Plant plant : plants) {\r\n                if (MapUtils.arePositionsClose(plant.getPosition(), position, searchRange)) {\r\n                    nearbyPlants.add( plant);\r\n                }\r\n            }\r\n        return nearbyPlants;\r\n    }\r\n    public List<Animal> getNearbyAnimals(Position position, int searchRange) {\r\n        List<Animal> nearbyAnimals = new ArrayList<>();\r\n        for (Animal animal : animals) {\r\n            if (MapUtils.arePositionsClose(animal.getPosition(), position, searchRange)) {\r\n                nearbyAnimals.add(animal);\r\n            }\r\n        }\r\n        return nearbyAnimals;\r\n    }\r\n\r\n    public void removeLifeform(Lifeform lifeform) {\r\n        ImageView lifeformImageView = null;\r\n        if (lifeform instanceof Plant) {\r\n            plants.remove(lifeform);\r\n            lifeformImageView = ((Plant) lifeform).getImageView();\r\n        } else {\r\n            animals.remove(lifeform);\r\n            lifeformImageView = ((Animal) lifeform).getImageView();\r\n        }\r\n\r\n        if (lifeformImageView != null) {\r\n            mapView.removeView(lifeformImageView);\r\n        }\r\n        map[lifeform.getPosition().getX()][lifeform.getPosition().getY()].setInHabitant(null);\r\n    }\r\n    // Getters and setters for the properties\r\n    // ...\r\n\r\n    // Additional world management methods, if needed\r\n    // ...\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/worldbuilder/mapgame/World.java b/app/src/main/java/com/worldbuilder/mapgame/World.java
+--- a/app/src/main/java/com/worldbuilder/mapgame/World.java	(revision d994846d7d5494052518a28228a1a9e82987a669)
++++ b/app/src/main/java/com/worldbuilder/mapgame/World.java	(date 1683514791431)
+@@ -1,16 +1,15 @@
+ package com.worldbuilder.mapgame;
+ 
+-import android.os.Build;
++import android.util.Log;
+ import android.widget.ImageView;
+ import android.widget.RelativeLayout;
+ 
+-import androidx.annotation.RequiresApi;
+-
+ import java.util.ArrayList;
+ import java.util.Iterator;
+ import java.util.List;
+ 
+ public class World {
++    private final static String TAG = World.class.getSimpleName();
+     private Tile[][] map;
+ 
+     public List<Plant> getPlants() {
+@@ -71,8 +70,10 @@
+ 
+     public void addLifeform(Lifeform lifeform) {
+         if (lifeform instanceof Plant) {
++            Log.d(TAG, "new plant has been added: " + lifeform);
+             plants.add((Plant) lifeform);
+         } else if (lifeform instanceof Animal) {
++            Log.d(TAG, "new animal has been added: " + lifeform);
+             animals.add((Animal) lifeform);
+         }
+     }
+Index: app/src/main/java/com/worldbuilder/mapgame/ui/dialogs/CreatePlantOrAnimalDialog.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.worldbuilder.mapgame.ui.dialogs;\r\n\r\nimport android.content.Context;\r\nimport android.content.res.Resources;\r\nimport android.os.Bundle;\r\nimport android.util.DisplayMetrics;\r\nimport android.view.View;\r\nimport android.widget.AdapterView;\r\nimport android.widget.SeekBar;\r\n\r\nimport androidx.annotation.NonNull;\r\nimport androidx.appcompat.app.AppCompatDialog;\r\n\r\nimport com.worldbuilder.mapgame.Lifeforms;\r\nimport com.worldbuilder.mapgame.R;\r\nimport com.worldbuilder.mapgame.databinding.DialogAddLifeformBinding;\r\nimport com.worldbuilder.mapgame.models.ItemCreationParams;\r\nimport com.worldbuilder.mapgame.ui.OnItemSelectedSimpleListener;\r\nimport com.worldbuilder.mapgame.ui.OnSeekBarSimpleChangeListener;\r\n\r\nimport java.util.Locale;\r\n\r\npublic class CreatePlantOrAnimalDialog extends AppCompatDialog {\r\n\r\n    public interface CreatePlantOrAnimalDialogListener {\r\n        void OnLifeformAddSelected(ItemCreationParams costs);\r\n    }\r\n\r\n    private static final float windowWidthRatio = .9f;\r\n    private static final float windowHeightRatio = .8f;\r\n\r\n    private DialogAddLifeformBinding binding;\r\n\r\n    private ItemCreationParams params;\r\n\r\n    private final CreatePlantOrAnimalDialogListener listener;\r\n\r\n    public CreatePlantOrAnimalDialog(@NonNull Context context) {\r\n        super(context);\r\n        try {\r\n            listener = (CreatePlantOrAnimalDialogListener) context;\r\n        } catch (ClassCastException e) {\r\n            throw new ClassCastException(\"dialog owner must implement CreatePlantOrAnimalDialogListener\");\r\n        }\r\n    }\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        binding = DialogAddLifeformBinding.inflate(getLayoutInflater());\r\n        setContentView(binding.getRoot());\r\n\r\n        resizeDialogWindow();\r\n\r\n        params = new ItemCreationParams();\r\n\r\n        bindSeekBars();\r\n        bindButtons();\r\n\r\n        selectPlantCreation();\r\n    }\r\n\r\n    private void resizeDialogWindow() {\r\n        DisplayMetrics dm = Resources.getSystem().getDisplayMetrics();\r\n        int width = (int) (dm.widthPixels * windowWidthRatio);\r\n        int height = (int) (dm.heightPixels * windowHeightRatio);\r\n\r\n        getWindow().setLayout(width, height);\r\n    }\r\n\r\n    void bindSeekBars() {\r\n        //seeding distance\r\n        binding.seedDistanceseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {\r\n            @Override\r\n            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {\r\n                params.seedDistCost = progress;\r\n                params.seedingDistanceProgress = progress;\r\n\r\n                params.cost = params.seedDistCost + params.propCost + params.lifespanCost + 100;\r\n                onCostsChanged();\r\n            }\r\n        });\r\n\r\n        //speed\r\n        binding.speedSeek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {\r\n            @Override\r\n            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {\r\n                params.speedCost = progress * 4;\r\n                params.seedSpeedProgress = progress;\r\n\r\n                params.cost = params.foodCost + params.propCost + params.speedCost + params.lifespanCost;\r\n                onCostsChanged();\r\n            }\r\n        });\r\n\r\n        //life span\r\n        binding.lifespanseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {\r\n            @Override\r\n            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {\r\n                params.lifespanCost = progress;\r\n                params.lifeSpanProgress = progress;\r\n\r\n                if (params.isPlantSelected) {\r\n                    params.cost = params.seedDistCost + params.propCost + params.lifespanCost + 150;\r\n                } else {\r\n                    params.cost = params.foodCost + params.propCost + params.speedCost + params.lifespanCost;\r\n                }\r\n                onCostsChanged();\r\n            }\r\n        });\r\n\r\n        //propagation rate\r\n        binding.plantdispersion.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {\r\n            @Override\r\n            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {\r\n                params.propCost = progress * 2;\r\n                params.propagationRateProgress = progress;\r\n\r\n                if (params.isPlantSelected) {\r\n                    params.cost = params.seedDistCost + params.propCost + params.lifespanCost + 150;\r\n                } else {\r\n                    params.cost = params.foodCost + params.propCost + params.speedCost + params.lifespanCost;\r\n                }\r\n                onCostsChanged();\r\n            }\r\n        });\r\n\r\n        //food type\r\n        binding.foodTypeSpinner.setOnItemSelectedListener(new OnItemSelectedSimpleListener() {\r\n            @Override\r\n            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {\r\n                params.selectedFoodType = binding.foodTypeSpinner.getSelectedItem().toString();\r\n\r\n                if (params.selectedFoodType.equals(\"Herbivore\")) {\r\n                    params.foodCost = 1000;\r\n                }\r\n                if (params.selectedFoodType.equals(\"Carnivore\")) {\r\n                    params.foodCost = 10000;\r\n                }\r\n                params.cost = params.foodCost + params.propCost + params.speedCost + params.lifespanCost;\r\n                onCostsChanged();\r\n            }\r\n        });\r\n    }\r\n\r\n    private void onCostsChanged() {\r\n        binding.cost.setText(String.format(Locale.getDefault(), \"Cost: %d\", params.cost));\r\n    }\r\n\r\n    private void bindButtons() {\r\n        binding.planttv.setOnClickListener(v -> selectPlantCreation());\r\n        binding.animaltv.setOnClickListener(v -> selectAnimalCreation());\r\n        binding.buttonsLL.setVisibility(View.VISIBLE);\r\n        binding.addBtn.setOnClickListener(v -> {\r\n            listener.OnLifeformAddSelected(params);\r\n            dismiss();\r\n        });\r\n\r\n        binding.cancelBtn.setOnClickListener(v -> dismiss());\r\n    }\r\n\r\n    private void selectPlantCreation() {\r\n        binding.planttv.setBackgroundResource(R.color.colorPrimary);\r\n        binding.animaltv.setBackgroundResource(R.color.gray);\r\n        params.isPlantSelected = true;\r\n        binding.seedDistancelayout.setVisibility(View.VISIBLE);\r\n        binding.speedlayout.setVisibility(View.GONE);\r\n        binding.foodTypeLayout.setVisibility(View.GONE);\r\n        binding.itemToCreateIv.setImageResource(Lifeforms.genericPlantDrawable);\r\n\r\n        params.cost = params.propCost + params.seedDistCost + params.lifespanCost + 150;\r\n        onCostsChanged();\r\n    }\r\n\r\n    private void selectAnimalCreation() {\r\n        binding.planttv.setBackgroundResource(R.color.gray);\r\n        binding.animaltv.setBackgroundResource(R.color.colorPrimary);\r\n        params.isPlantSelected = false;\r\n        binding.seedDistancelayout.setVisibility(View.GONE);\r\n        binding.speedlayout.setVisibility(View.VISIBLE);\r\n        binding.foodTypeLayout.setVisibility(View.VISIBLE);\r\n        binding.itemToCreateIv.setImageResource(Lifeforms.genericAnimalDrawable);\r\n\r\n        params.cost = params.foodCost + params.propCost + params.speedCost + params.lifespanCost;\r\n        onCostsChanged();\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/worldbuilder/mapgame/ui/dialogs/CreatePlantOrAnimalDialog.java b/app/src/main/java/com/worldbuilder/mapgame/ui/dialogs/CreatePlantOrAnimalDialog.java
+--- a/app/src/main/java/com/worldbuilder/mapgame/ui/dialogs/CreatePlantOrAnimalDialog.java	(revision d994846d7d5494052518a28228a1a9e82987a669)
++++ b/app/src/main/java/com/worldbuilder/mapgame/ui/dialogs/CreatePlantOrAnimalDialog.java	(date 1683514791432)
+@@ -27,7 +27,7 @@
+     }
+ 
+     private static final float windowWidthRatio = .9f;
+-    private static final float windowHeightRatio = .8f;
++    private static final float windowHeightRatio = .9f;
+ 
+     private DialogAddLifeformBinding binding;
+ 
+@@ -52,8 +52,6 @@
+ 
+         resizeDialogWindow();
+ 
+-        params = new ItemCreationParams();
+-
+         bindSeekBars();
+         bindButtons();
+ 
+@@ -73,6 +71,7 @@
+         binding.seedDistanceseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
+             @Override
+             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
++                if(!b) return;
+                 params.seedDistCost = progress;
+                 params.seedingDistanceProgress = progress;
+ 
+@@ -85,6 +84,7 @@
+         binding.speedSeek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
+             @Override
+             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
++                if(!b) return;
+                 params.speedCost = progress * 4;
+                 params.seedSpeedProgress = progress;
+ 
+@@ -93,10 +93,22 @@
+             }
+         });
+ 
++        //elevation habitat
++        binding.elevationHabitatseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
++            @Override
++            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
++                if(!b) return;
++                params.elevationProgress = progress;
++                //TODO: complete cost calculation
++                onCostsChanged();
++            }
++        });
++
+         //life span
+         binding.lifespanseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
+             @Override
+             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
++                if(!b) return;
+                 params.lifespanCost = progress;
+                 params.lifeSpanProgress = progress;
+ 
+@@ -113,6 +125,7 @@
+         binding.plantdispersion.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
+             @Override
+             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
++                if(!b) return;
+                 params.propCost = progress * 2;
+                 params.propagationRateProgress = progress;
+ 
+@@ -160,6 +173,7 @@
+     }
+ 
+     private void selectPlantCreation() {
++        resetCreationParameters();
+         binding.planttv.setBackgroundResource(R.color.colorPrimary);
+         binding.animaltv.setBackgroundResource(R.color.gray);
+         params.isPlantSelected = true;
+@@ -173,6 +187,7 @@
+     }
+ 
+     private void selectAnimalCreation() {
++        resetCreationParameters();
+         binding.planttv.setBackgroundResource(R.color.gray);
+         binding.animaltv.setBackgroundResource(R.color.colorPrimary);
+         params.isPlantSelected = false;
+@@ -184,4 +199,14 @@
+         params.cost = params.foodCost + params.propCost + params.speedCost + params.lifespanCost;
+         onCostsChanged();
+     }
++
++    private void resetCreationParameters() {
++        params = new ItemCreationParams();
++        binding.seedDistanceseek.setProgress(params.seedingDistanceProgress);
++        binding.speedSeek.setProgress(params.seedSpeedProgress);
++        binding.elevationHabitatseek.setProgress(params.elevationProgress);
++        binding.lifespanseek.setProgress(params.lifeSpanProgress);
++        binding.plantdispersion.setProgress(params.propagationRateProgress);
++        binding.foodTypeSpinner.setSelection(0);
++    }
+ }
+Index: app/src/main/res/layout/dialog_add_lifeform.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<LinearLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    xmlns:tools=\"http://schemas.android.com/tools\"\r\n    android:layout_width=\"match_parent\"\r\n    android:layout_height=\"wrap_content\"\r\n    android:background=\"@drawable/rounded_dialog\"\r\n    android:gravity=\"center_horizontal\"\r\n    android:orientation=\"vertical\"\r\n    android:padding=\"16dp\">\r\n\r\n    <LinearLayout\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:layout_gravity=\"center\"\r\n        android:orientation=\"horizontal\">\r\n\r\n        <TextView\r\n            android:id=\"@+id/planttv\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:layout_weight=\"1\"\r\n            android:text=\"@string/plant\"\r\n            android:textAlignment=\"center\"\r\n            android:textColor=\"@color/dialogText\"\r\n            tools:background=\"@color/colorPrimary\" />\r\n\r\n        <TextView\r\n            android:id=\"@+id/animaltv\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:layout_weight=\"1\"\r\n            android:text=\"@string/animal\"\r\n            android:textAlignment=\"center\"\r\n            android:textColor=\"@color/dialogText\" />\r\n\r\n    </LinearLayout>\r\n\r\n    <ImageView\r\n        android:id=\"@+id/itemToCreateIv\"\r\n        android:layout_width=\"80dp\"\r\n        android:layout_height=\"80dp\"\r\n        android:layout_margin=\"20dp\"\r\n        android:src=\"@drawable/grass\" />\r\n\r\n    <TextView\r\n        android:id=\"@+id/cost\"\r\n        android:layout_width=\"wrap_content\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:text=\"Cost: 300\"\r\n        android:textColor=\"@color/black\"\r\n        android:textSize=\"20sp\" />\r\n\r\n    <LinearLayout\r\n        android:id=\"@+id/lifespanlayout\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:orientation=\"vertical\"\r\n        android:padding=\"8dp\">\r\n\r\n        <TextView\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:text=\"@string/life_span\"\r\n            android:textAlignment=\"center\"\r\n            android:textColor=\"@color/dialogText\" />\r\n\r\n        <SeekBar\r\n            android:id=\"@+id/lifespanseek\"\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:progress=\"50\"\r\n            android:thumbTint=\"@color/dialogText\" />\r\n    </LinearLayout>\r\n\r\n    <LinearLayout\r\n        android:id=\"@+id/plantdispersionlayout\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:orientation=\"vertical\"\r\n        android:padding=\"8dp\">\r\n\r\n        <TextView\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:text=\"@string/propagation_rate\"\r\n            android:textAlignment=\"center\"\r\n            android:textColor=\"@color/dialogText\" />\r\n\r\n        <SeekBar\r\n            android:id=\"@+id/plantdispersion\"\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:progress=\"50\"\r\n            android:thumbTint=\"@color/dialogText\" />\r\n    </LinearLayout>\r\n\r\n    <LinearLayout\r\n        android:id=\"@+id/seedDistancelayout\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:orientation=\"vertical\"\r\n        android:padding=\"8dp\">\r\n\r\n        <TextView\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:text=\"@string/seeding_max_distance\"\r\n            android:textAlignment=\"center\"\r\n            android:textColor=\"@color/dialogText\" />\r\n\r\n        <SeekBar\r\n            android:id=\"@+id/seedDistanceseek\"\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:progress=\"50\"\r\n            android:thumbTint=\"@color/dialogText\" />\r\n    </LinearLayout>\r\n\r\n    <LinearLayout\r\n        android:id=\"@+id/elevationlayout\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:orientation=\"vertical\"\r\n        android:padding=\"8dp\">\r\n\r\n        <TextView\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:text=\"@string/habitat_elevation\"\r\n            android:textAlignment=\"center\"\r\n            android:textColor=\"@color/dialogText\" />\r\n\r\n        <SeekBar\r\n            android:id=\"@+id/elevationHabitatseek\"\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:progress=\"50\"\r\n            android:thumbTint=\"@color/dialogText\" />\r\n    </LinearLayout>\r\n\r\n    <LinearLayout\r\n        android:id=\"@+id/speedlayout\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:orientation=\"vertical\"\r\n        android:padding=\"8dp\"\r\n        android:visibility=\"gone\">\r\n\r\n        <TextView\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:text=\"@string/speed\"\r\n            android:textAlignment=\"center\"\r\n            android:textColor=\"@color/dialogText\" />\r\n\r\n        <SeekBar\r\n            android:id=\"@+id/speedSeek\"\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:progress=\"50\"\r\n            android:thumbTint=\"@color/colorAccent\" />\r\n    </LinearLayout>\r\n\r\n    <LinearLayout\r\n        android:id=\"@+id/foodTypeLayout\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:orientation=\"vertical\"\r\n        android:padding=\"8dp\"\r\n        android:visibility=\"gone\">\r\n\r\n        <TextView\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:text=\"@string/foodtype\"\r\n            android:textAlignment=\"center\"\r\n            android:textColor=\"@color/dialogText\" />\r\n\r\n        <Spinner\r\n            android:id=\"@+id/foodTypeSpinner\"\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:entries=\"@array/food_types\"\r\n            android:progress=\"50\" />\r\n    </LinearLayout>\r\n\r\n    <LinearLayout\r\n        android:id=\"@+id/buttonsLL\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:layout_marginVertical=\"16dp\"\r\n        android:orientation=\"horizontal\"\r\n        android:visibility=\"gone\"\r\n        tools:visibility=\"visible\">\r\n\r\n        <Button\r\n            android:id=\"@+id/addBtn\"\r\n            android:layout_width=\"0dp\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:layout_weight=\"1\"\r\n            android:text=\"@string/add\" />\r\n\r\n        <Space\r\n            android:layout_width=\"16dp\"\r\n            android:layout_height=\"0dp\" />\r\n\r\n        <Button\r\n            android:id=\"@+id/cancelBtn\"\r\n            android:layout_width=\"0dp\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:layout_weight=\"1\"\r\n            android:text=\"@android:string/cancel\" />\r\n    </LinearLayout>\r\n\r\n</LinearLayout>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/dialog_add_lifeform.xml b/app/src/main/res/layout/dialog_add_lifeform.xml
+--- a/app/src/main/res/layout/dialog_add_lifeform.xml	(revision d994846d7d5494052518a28228a1a9e82987a669)
++++ b/app/src/main/res/layout/dialog_add_lifeform.xml	(date 1683514791433)
+@@ -50,166 +50,180 @@
+         android:textColor="@color/black"
+         android:textSize="20sp" />
+ 
+-    <LinearLayout
+-        android:id="@+id/lifespanlayout"
+-        android:layout_width="match_parent"
+-        android:layout_height="wrap_content"
+-        android:orientation="vertical"
+-        android:padding="8dp">
++    <ScrollView
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content">
++
++        <LinearLayout
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:orientation="vertical">
++
++            <LinearLayout
++                android:id="@+id/lifespanlayout"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:orientation="vertical"
++                android:padding="8dp">
+ 
+-        <TextView
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:text="@string/life_span"
+-            android:textAlignment="center"
+-            android:textColor="@color/dialogText" />
++                <TextView
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:text="@string/life_span"
++                    android:textAlignment="center"
++                    android:textColor="@color/dialogText" />
+ 
+-        <SeekBar
+-            android:id="@+id/lifespanseek"
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:progress="50"
+-            android:thumbTint="@color/dialogText" />
+-    </LinearLayout>
++                <SeekBar
++                    android:id="@+id/lifespanseek"
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:progress="50"
++                    android:thumbTint="@color/dialogText" />
++            </LinearLayout>
+ 
+-    <LinearLayout
+-        android:id="@+id/plantdispersionlayout"
+-        android:layout_width="match_parent"
+-        android:layout_height="wrap_content"
+-        android:orientation="vertical"
+-        android:padding="8dp">
++            <LinearLayout
++                android:id="@+id/plantdispersionlayout"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:orientation="vertical"
++                android:padding="8dp">
+ 
+-        <TextView
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:text="@string/propagation_rate"
+-            android:textAlignment="center"
+-            android:textColor="@color/dialogText" />
++                <TextView
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:text="@string/propagation_rate"
++                    android:textAlignment="center"
++                    android:textColor="@color/dialogText" />
+ 
+-        <SeekBar
+-            android:id="@+id/plantdispersion"
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:progress="50"
+-            android:thumbTint="@color/dialogText" />
+-    </LinearLayout>
++                <SeekBar
++                    android:id="@+id/plantdispersion"
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:progress="50"
++                    android:thumbTint="@color/dialogText" />
++            </LinearLayout>
+ 
+-    <LinearLayout
+-        android:id="@+id/seedDistancelayout"
+-        android:layout_width="match_parent"
+-        android:layout_height="wrap_content"
+-        android:orientation="vertical"
+-        android:padding="8dp">
++            <LinearLayout
++                android:id="@+id/seedDistancelayout"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:orientation="vertical"
++                android:padding="8dp">
+ 
+-        <TextView
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:text="@string/seeding_max_distance"
+-            android:textAlignment="center"
+-            android:textColor="@color/dialogText" />
++                <TextView
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:text="@string/seeding_max_distance"
++                    android:textAlignment="center"
++                    android:textColor="@color/dialogText" />
+ 
+-        <SeekBar
+-            android:id="@+id/seedDistanceseek"
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:progress="50"
+-            android:thumbTint="@color/dialogText" />
+-    </LinearLayout>
++                <SeekBar
++                    android:id="@+id/seedDistanceseek"
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:progress="50"
++                    android:thumbTint="@color/dialogText" />
++            </LinearLayout>
+ 
+-    <LinearLayout
+-        android:id="@+id/elevationlayout"
+-        android:layout_width="match_parent"
+-        android:layout_height="wrap_content"
+-        android:orientation="vertical"
+-        android:padding="8dp">
++            <LinearLayout
++                android:id="@+id/elevationlayout"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:orientation="vertical"
++                android:padding="8dp">
+ 
+-        <TextView
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:text="@string/habitat_elevation"
+-            android:textAlignment="center"
+-            android:textColor="@color/dialogText" />
++                <TextView
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:text="@string/habitat_elevation"
++                    android:textAlignment="center"
++                    android:textColor="@color/dialogText" />
+ 
+-        <SeekBar
+-            android:id="@+id/elevationHabitatseek"
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:progress="50"
+-            android:thumbTint="@color/dialogText" />
+-    </LinearLayout>
++                <SeekBar
++                    android:id="@+id/elevationHabitatseek"
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:progress="50"
++                    android:thumbTint="@color/dialogText" />
++            </LinearLayout>
+ 
+-    <LinearLayout
+-        android:id="@+id/speedlayout"
+-        android:layout_width="match_parent"
+-        android:layout_height="wrap_content"
+-        android:orientation="vertical"
+-        android:padding="8dp"
+-        android:visibility="gone">
++            <LinearLayout
++                android:id="@+id/speedlayout"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:orientation="vertical"
++                android:padding="8dp"
++                android:visibility="gone"
++                tools:visibility="visible">
+ 
+-        <TextView
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:text="@string/speed"
+-            android:textAlignment="center"
+-            android:textColor="@color/dialogText" />
++                <TextView
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:text="@string/speed"
++                    android:textAlignment="center"
++                    android:textColor="@color/dialogText" />
+ 
+-        <SeekBar
+-            android:id="@+id/speedSeek"
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:progress="50"
+-            android:thumbTint="@color/colorAccent" />
+-    </LinearLayout>
++                <SeekBar
++                    android:id="@+id/speedSeek"
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:progress="50"
++                    android:thumbTint="@color/colorAccent" />
++            </LinearLayout>
+ 
+-    <LinearLayout
+-        android:id="@+id/foodTypeLayout"
+-        android:layout_width="match_parent"
+-        android:layout_height="wrap_content"
+-        android:orientation="vertical"
+-        android:padding="8dp"
+-        android:visibility="gone">
++            <LinearLayout
++                android:id="@+id/foodTypeLayout"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:orientation="vertical"
++                android:padding="8dp"
++                android:visibility="gone"
++                tools:visibility="visible">
+ 
+-        <TextView
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:text="@string/foodtype"
+-            android:textAlignment="center"
+-            android:textColor="@color/dialogText" />
++                <TextView
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:text="@string/foodtype"
++                    android:textAlignment="center"
++                    android:textColor="@color/dialogText" />
+ 
+-        <Spinner
+-            android:id="@+id/foodTypeSpinner"
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:entries="@array/food_types"
+-            android:progress="50" />
+-    </LinearLayout>
++                <Spinner
++                    android:id="@+id/foodTypeSpinner"
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:entries="@array/food_types"
++                    android:progress="50" />
++            </LinearLayout>
+ 
+-    <LinearLayout
+-        android:id="@+id/buttonsLL"
+-        android:layout_width="match_parent"
+-        android:layout_height="wrap_content"
+-        android:layout_marginVertical="16dp"
+-        android:orientation="horizontal"
+-        android:visibility="gone"
+-        tools:visibility="visible">
++            <LinearLayout
++                android:id="@+id/buttonsLL"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:layout_marginVertical="16dp"
++                android:orientation="horizontal"
++                android:visibility="gone"
++                tools:visibility="visible">
+ 
+-        <Button
+-            android:id="@+id/addBtn"
+-            android:layout_width="0dp"
+-            android:layout_height="wrap_content"
+-            android:layout_weight="1"
+-            android:text="@string/add" />
++                <Button
++                    android:id="@+id/addBtn"
++                    android:layout_width="0dp"
++                    android:layout_height="wrap_content"
++                    android:layout_weight="1"
++                    android:text="@string/add" />
+ 
+-        <Space
+-            android:layout_width="16dp"
+-            android:layout_height="0dp" />
++                <Space
++                    android:layout_width="16dp"
++                    android:layout_height="0dp" />
+ 
+-        <Button
+-            android:id="@+id/cancelBtn"
+-            android:layout_width="0dp"
+-            android:layout_height="wrap_content"
+-            android:layout_weight="1"
+-            android:text="@android:string/cancel" />
+-    </LinearLayout>
++                <Button
++                    android:id="@+id/cancelBtn"
++                    android:layout_width="0dp"
++                    android:layout_height="wrap_content"
++                    android:layout_weight="1"
++                    android:text="@android:string/cancel" />
++            </LinearLayout>
++        </LinearLayout>
++    </ScrollView>
++
+ 
+ </LinearLayout>
+\ No newline at end of file
