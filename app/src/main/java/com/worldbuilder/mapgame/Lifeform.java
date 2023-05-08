@@ -7,7 +7,6 @@ import java.io.Serializable;
 
 public abstract class Lifeform implements Serializable {
 
-
     public int getLifeFormID() {
         return lifeFormID;
     }

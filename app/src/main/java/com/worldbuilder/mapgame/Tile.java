@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Tile {
-
-
     public enum TerrainType {
         WATER,
         BEACH,
@@ -50,7 +48,7 @@ public class Tile {
         return color;
     }
 
-    public static int getTileSize(){
+    public static int getTileSize() {
         return 2;
     }
 

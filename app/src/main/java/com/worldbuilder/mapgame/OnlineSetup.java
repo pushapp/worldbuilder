@@ -15,7 +15,7 @@ public class OnlineSetup {
 
     private void createNewGameSession(String playerName) {
         MapGenerator mapGenerator = new MapGenerator();
-        Tile[][] map = mapGenerator.generateRandomMap(1000,1000,0f,0f);
+        Tile[][] map = mapGenerator.generateRandomMap(1000, 1000, 0f, 0f);
         List<Map<String, Object>> serializedMap = serializeTileArray(map);
 
 

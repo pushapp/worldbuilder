@@ -4,15 +4,10 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.util.Base64;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -22,8 +17,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SaveGame {
-    static Type animalListType = new TypeToken<List<Animal>>() {}.getType();
-    static Type plantListType = new TypeToken<List<Plant>>() {}.getType();
+    static Type animalListType = new TypeToken<List<Animal>>() {
+    }.getType();
+    static Type plantListType = new TypeToken<List<Plant>>() {
+    }.getType();
     public static final String BITMAPFILE = "bmf";
 
     public static final String ANIMALS_KEY = "animals";
@@ -53,6 +50,7 @@ public class SaveGame {
         Gson gson = new Gson();
         return gson.toJson(tileArray);
     }
+
     public static void saveTileArrayToFile(Context context, Tile[][] tileArray) {
         removeLifeformsFromTiles(tileArray);
 
@@ -64,11 +62,14 @@ public class SaveGame {
             e.printStackTrace();
         }
     }
+
     private static Tile[][] jsonToTileArray(String jsonString) {
         Gson gson = new Gson();
-        Type tileArrayType = new TypeToken<Tile[][]>() {}.getType();
+        Type tileArrayType = new TypeToken<Tile[][]>() {
+        }.getType();
         return gson.fromJson(jsonString, tileArrayType);
     }
+
     public static Tile[][] loadTileArrayFromFile(Context context) {
 
         try (FileInputStream fis = context.openFileInput(TILE_FILE)) {
@@ -86,16 +87,14 @@ public class SaveGame {
     public static void saveToSharedPrefs(Context context, World world) {
 
         Gson gson = new Gson();
-            String animalsjson = gson.toJson(world.getAnimals(), animalListType);
-
-            String plantsjson = gson.toJson(world.getPlants(), animalListType);
-
+        String animalsjson = gson.toJson(world.getAnimals(), animalListType);
+        String plantsjson = gson.toJson(world.getPlants(), animalListType);
 
         SharedPreferences sharedPreferences = context.getSharedPreferences(SHARED_PREFS_KEY, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString(ANIMALS_KEY, animalsjson);
-        editor.putString(PLANTS_KEY,plantsjson);
-        editor.putInt(DARWIN_KEY,world.darwinPoints);
+        editor.putString(PLANTS_KEY, plantsjson);
+        editor.putInt(DARWIN_KEY, world.darwinPoints);
         editor.apply();
     }
 
@@ -118,9 +117,10 @@ public class SaveGame {
         Gson gson = new Gson();
         return gson.fromJson(json, plantListType);
     }
-    public static int loadDarwinFromPrefs(Context context){
+
+    public static int loadDarwinFromPrefs(Context context) {
         SharedPreferences sharedPreferences = context.getSharedPreferences(SHARED_PREFS_KEY, Context.MODE_PRIVATE);
-        return sharedPreferences.getInt(DARWIN_KEY,0);
+        return sharedPreferences.getInt(DARWIN_KEY, 0);
     }
 
     private static void removeLifeformsFromTiles(Tile[][] tiles) {
@@ -132,5 +132,4 @@ public class SaveGame {
             }
         }
     }
-
 }

@@ -3,20 +3,19 @@ package com.worldbuilder.mapgame;
 import static com.worldbuilder.mapgame.Lifeforms.getRandomAnimalDrawable;
 import static com.worldbuilder.mapgame.Lifeforms.getRandomPlantDrawable;
 
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.gson.Gson;
+import com.worldbuilder.mapgame.databinding.ActivityMainBinding;
 import com.worldbuilder.mapgame.models.ItemCreationParams;
 import com.worldbuilder.mapgame.ui.dialogs.CreatePlantOrAnimalDialog;
 import com.worldbuilder.mapgame.ui.dialogs.CustomizeWorldDialog;
@@ -28,10 +27,6 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener, CustomizeWorldDialog.CustomizeWorldDialogListener {
 
-    SharedPreferences sharedPreferences;
-    SharedPreferences.Editor editor;
-    Gson gson = new Gson();
-    TextView dpointTV;
     ImageView[][] imageViews;
     Tile[][] tilemap;
     MapGenerator mapGenerator = new MapGenerator();
@@ -45,31 +40,30 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
     private Map<Plant, ImageView> plantImageViews = new HashMap<>();
     private Map<Animal, ImageView> animalImageViews = new HashMap<>();
 
-    private Position lastTouchedPosition = new Position(0, 0);
+    private final Position lastTouchedPosition = new Position(0, 0);
 
-    private ImageView mapIV;
-    private RelativeLayout lifeformContainer;
+    private ActivityMainBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_main);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
         //lifeformContainer OnClickListener is in this method
         initobjects();
 
-        Bitmap bitmap = SaveGame.loadBitmapFromInternalStorage(this,SaveGame.BITMAPFILE);
+        Bitmap bitmap = SaveGame.loadBitmapFromInternalStorage(this, SaveGame.BITMAPFILE);
         if (bitmap == null) {
             //no Saved game... launch dialog to create new game
             CustomizeWorldDialog customizeWorldDialog = new CustomizeWorldDialog();
             customizeWorldDialog.show(getSupportFragmentManager(), "customize_world_dialog");
-        }else{
+        } else {
             //There is game saved. load it
             tilemap = SaveGame.loadTileArrayFromFile(this);
-            loadSavedGame(bitmap,tilemap);
+            loadSavedGame(bitmap, tilemap);
         }
-
     }
 
     private final Handler handler = new Handler();
@@ -77,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
         @Override
         public void run() {
 
-            if(world != null) {
+            if (world != null) {
                 incrementTime(1);
             }
 
@@ -126,24 +120,23 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
         int yPosition = MapUtils.calculateYPosition(lifeform.getPosition().getY());
         Log.d("LifeformPosition", "X: " + xPosition + ", Y: " + yPosition);
 
-        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(Lifeform.getImgSize(), Lifeform.getImgSize());
+        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(Lifeform.getImgSize(), Lifeform.getImgSize());
         layoutParams.leftMargin = xPosition;
         layoutParams.topMargin = yPosition;
 
         lifeformImageView.setLayoutParams(layoutParams);
 
-        lifeformContainer.addView(lifeformImageView);
+        binding.lifeFormContainer.addView(lifeformImageView);
 
         lifeform.setImageView(lifeformImageView);
 
         int[] location = new int[2];
         lifeformImageView.getLocationInWindow(location);
         Log.d("LifeformImageView", "Position within RelativeLayout: X: " + location[0] + ", Y: " + location[1]);
-
     }
 
     private void updateDarwinTV(World world) {
-        dpointTV.setText("$" + world.getDarwinPoints() + " Darwin");
+        binding.dpoints.setText("$" + world.getDarwinPoints() + " Darwin");
     }
 
     @Override
@@ -185,8 +178,8 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
             }
 
             //save Tilemap
-            SaveGame.saveTileArrayToFile(this,tilemap);
-            SaveGame.saveToSharedPrefs(this,world);
+            SaveGame.saveTileArrayToFile(this, tilemap);
+            SaveGame.saveToSharedPrefs(this, world);
         }
         // Update the UI to display the new lifeform
         // ...
@@ -196,32 +189,27 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
     public void onCreateWorld(float waterFrequency, float mountainFrequency) {
         tilemap = mapGenerator.generateRandomMap(width, height, waterFrequency, mountainFrequency);
         Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);
-        SaveGame.saveBitmapToInternalStorage(this,bitmap,SaveGame.BITMAPFILE);
-        mapIV.setImageBitmap(bitmap);
+        SaveGame.saveBitmapToInternalStorage(this, bitmap, SaveGame.BITMAPFILE);
+        setMapBitmap(bitmap);
 
         tilemap = MapUtils.reduceTileArray(tilemap, MapUtils.tileMapDivisor);
 
-        RelativeLayout.LayoutParams containerLayoutParams = new RelativeLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());
-        lifeformContainer.setLayoutParams(containerLayoutParams);
-
-        world = new World(tilemap, lifeformContainer);
-        dpointTV.setText("Darwin Points: " + world.getDarwinPoints());
+        world = new World(tilemap, binding.lifeFormContainer);
+        binding.dpoints.setText("Darwin Points: " + world.getDarwinPoints());
     }
 
-    public void loadSavedGame(Bitmap bitmap, Tile[][] map){
-        RelativeLayout.LayoutParams containerLayoutParams = new RelativeLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());
-        lifeformContainer.setLayoutParams(containerLayoutParams);
+    public void loadSavedGame(Bitmap bitmap, Tile[][] map) {
+        setMapBitmap(bitmap);
 
-        mapIV.setImageBitmap(bitmap);
-        world = new World(map, lifeformContainer);
+        world = new World(map, binding.lifeFormContainer);
         List<Animal> animals = SaveGame.loadAnimalsFromPrefs(this);
-        for(Animal animal : animals){
+        for (Animal animal : animals) {
             Position pos = animal.getPosition();
             map[pos.getX()][pos.getY()].setInHabitant(animal);
             addLifeformImageView(animal);
         }
         List<Plant> plants = SaveGame.loadPlantsFromPrefs(this);
-        for(Plant plant : plants){
+        for (Plant plant : plants) {
             Position pos = plant.getPosition();
             map[pos.getX()][pos.getY()].setInHabitant(plant);
             addLifeformImageView(plant);
@@ -231,14 +219,14 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
         world.setPlants(plants);
         world.setDarwinPoints(darwin);
 
-        dpointTV.setText("Darwin Points: " + world.getDarwinPoints());
-        for(int x = 0; x < map.length; x++){
-            for(int y = 0; y < map[0].length; y++){
+        binding.dpoints.setText("Darwin Points: " + world.getDarwinPoints());
+        for (int x = 0; x < map.length; x++) {
+            for (int y = 0; y < map[0].length; y++) {
                 Log.d("debug", "in TM loop");
-                if(map[x][y].getInHabitant() != null){
+                if (map[x][y].getInHabitant() != null) {
 
                     Lifeform lf = map[x][y].getInHabitant();
-                    Log.d("debug", "lf at "+ lf.getPosition().getX() +" , " + lf.getPosition().getY());
+                    Log.d("debug", "lf at " + lf.getPosition().getX() + " , " + lf.getPosition().getY());
                     world.addLifeform(lf);
                     addLifeformImageView(lf);
 
@@ -247,31 +235,33 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
         }
     }
 
-    private void initobjects(){
-        lifeformContainer = findViewById(R.id.lifeFormContainer);
-        mapIV = findViewById(R.id.mapIV);
+    /**
+     * apply image of map to view
+     */
+    private void setMapBitmap(Bitmap bitmap) {
+        Drawable map = new BitmapDrawable(getResources(), bitmap);
 
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());
+        binding.lifeFormContainer.setLayoutParams(lp);
+        binding.lifeFormContainer.setBackground(map);
+    }
 
-        lifeformContainer.setOnTouchListener((view, event) -> {
+    private void initobjects() {
+        binding.lifeFormContainer.setOnTouchListener((view, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 int x = (int) (event.getX() / Tile.getTileSize()) / MapUtils.tileMapDivisor;
                 int y = (int) (event.getY() / Tile.getTileSize()) / MapUtils.tileMapDivisor;
                 Log.d("debug", "IN ONTOUCH: x = " + x + "y = " + y);
-                lastTouchedPosition.setX(x);
-                lastTouchedPosition.setY(y);
+                lastTouchedPosition.set(x, y);
             }
             return false;
         });
-        lifeformContainer.setOnClickListener(view -> {
+        binding.lifeFormContainer.setOnClickListener(view -> {
             CreatePlantOrAnimalDialog dialog = new CreatePlantOrAnimalDialog(this);
             dialog.show();
         });
 
-        dpointTV = findViewById(R.id.dpoints);
-
-
-        Button ResetButton = findViewById(R.id.resetButton);
-        ResetButton.setOnClickListener(view -> {
+        binding.resetButton.setOnClickListener(view -> {
             world.resetLifeforms();
 
             CustomizeWorldDialog customizeWorldDialog1 = new CustomizeWorldDialog();

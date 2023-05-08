@@ -4,7 +4,6 @@ import java.security.SecureRandom;
 import java.util.Random;
 
 public class Lifeforms {
-
     public static int[] animalDrawables = {
             R.drawable.goat,
             R.drawable.pig,

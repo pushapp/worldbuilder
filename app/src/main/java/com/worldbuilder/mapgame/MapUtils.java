@@ -44,9 +44,7 @@ public class MapUtils {
                     return new Position(newX, newY);
                 }
             }
-
         }
-
         return null;
     }
 
@@ -85,15 +83,10 @@ public class MapUtils {
             // Check if the new position is within the map boundaries
             if (newX >= 0 && newX < map.length && newY >= 0 && newY < map[0].length) {
                 Tile newTile = map[newX][newY];
-                boolean canPlantOnTile = false;
 
                 // Check that the tile meets the proper conditions
                 if (Math.abs(plant.habitat - newTile.getElevation()) < 20 && newTile.getTerrainType() != Tile.TerrainType.WATER && newTile.getInHabitant() == null) {
                     // Plant can grow in water, so it can be placed on water tiles
-                    canPlantOnTile = true;
-                }
-
-                if (canPlantOnTile) {
                     return new Position(newX, newY);
                 }
             }
@@ -183,7 +176,6 @@ public class MapUtils {
                 reducedTiles[i][j] = new Tile(dominantTerrainType, averageElevation);
             }
         }
-
         return reducedTiles;
     }
 

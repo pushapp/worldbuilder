@@ -2,8 +2,8 @@ package com.worldbuilder.mapgame;
 
 import android.content.Context;
 import android.util.Log;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -108,7 +108,7 @@ public class Animal extends Lifeform {
                             int xPosition = MapUtils.calculateXPosition(newPos.getX());
                             int yPosition = MapUtils.calculateYPosition(newPos.getY());
 
-                            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(getImgSize(), getImgSize());
+                            FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(getImgSize(), getImgSize());
                             layoutParams.leftMargin = xPosition;
                             layoutParams.topMargin = yPosition;
                             newAnimalImageView.setLayoutParams(layoutParams);
@@ -204,7 +204,7 @@ public class Animal extends Lifeform {
 
         if(targetSquare != null) {
             // Update the ImageView position
-            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) imageView.getLayoutParams();
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) imageView.getLayoutParams();
 
             int targetX = MapUtils.calculateXPosition(targetSquare.getX());
             int targetY = MapUtils.calculateYPosition(targetSquare.getY());

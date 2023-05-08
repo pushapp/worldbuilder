@@ -20,6 +20,7 @@ public class PerlinNoise {
         System.arraycopy(permutation, 0, p, 0, 256);
         System.arraycopy(permutation, 0, p, 256, 256);
     }
+
     public float noise(float x, float y, float frequency, float amplitude) {
         // Scale the input coordinates to control the frequency of the noise
         x *= frequency;
@@ -36,7 +37,7 @@ public class PerlinNoise {
 
         // Scale the output value to control the amplitude of the noise
         return amplitude * lerp(v, lerp(u, grad(p[AA], x, y),
-                grad(p[BA], x - 1, y)),
+                        grad(p[BA], x - 1, y)),
                 lerp(u, grad(p[AB], x, y - 1),
                         grad(p[BB], x - 1, y - 1)));
     }

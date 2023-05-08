@@ -1,26 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <Button
         android:id="@+id/resetButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="New World"
-        android:layout_alignParentRight="true"
-        />
+        android:layout_alignParentEnd="true"
+        android:text="@string/new_world" />
 
     <TextView
         android:id="@+id/dpoints"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:background="@drawable/rounded_dialog"
         android:text="$0 Darwin"
         android:textColor="@color/black"
-        android:translationZ="20dp"
-        android:background="@drawable/rounded_dialog"
-        android:textSize="20dp"
-        />
+        android:textSize="20sp"
+        android:translationZ="20dp" />
 
 
     <HorizontalScrollView
@@ -28,32 +27,16 @@
         android:layout_height="match_parent"
         android:scrollbars="none">
 
-    <ScrollView
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:scrollbars="none">
-
-        <RelativeLayout
-            android:layout_width="match_parent"
+        <ScrollView
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:background="@color/white"
-            android:id="@+id/map">
+            android:scrollbars="none">
+
             <RelativeLayout
+                android:id="@+id/lifeFormContainer"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:id="@+id/lifeFormContainer"
-                android:translationZ="20dp" />
-
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/mapIV"
-                />
-
-        </RelativeLayout>
-    </ScrollView>
+                tools:background="@tools:sample/backgrounds/scenic" />
+        </ScrollView>
     </HorizontalScrollView>
-
-
-
 </RelativeLayout>

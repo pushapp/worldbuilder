@@ -9,6 +9,7 @@
     <string name="speed">Speed</string>
     <string name="foodtype">FoodType</string>
     <string name="add">Add</string>
+    <string name="new_world">New World</string>
 
     <string-array name="lifeform_types">
         <item>Plant</item>
