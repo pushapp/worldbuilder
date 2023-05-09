@@ -94,7 +94,7 @@ public class SaveGame {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString(ANIMALS_KEY, animalsjson);
         editor.putString(PLANTS_KEY, plantsjson);
-        editor.putInt(DARWIN_KEY, world.darwinPoints);
+        editor.putInt(DARWIN_KEY, world.getDarwinPoints());
         editor.apply();
     }
 

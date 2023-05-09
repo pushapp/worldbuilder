@@ -2,8 +2,8 @@ package com.worldbuilder.mapgame;
 
 import android.content.Context;
 import android.util.Log;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,7 +59,7 @@ public class Animal extends Lifeform {
         move(map);
 
         if (propCounter == MapUtils.resolution) {
-            world.setDarwinPoints(world.darwinPoints +10);
+            world.setDarwinPoints(world.getDarwinPoints() + 10);
             incrementAge();
             if (energy > 40) {
                 procreate(map, world, context);
@@ -108,7 +108,7 @@ public class Animal extends Lifeform {
                             int xPosition = MapUtils.calculateXPosition(newPos.getX());
                             int yPosition = MapUtils.calculateYPosition(newPos.getY());
 
-                            FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(getImgSize(), getImgSize());
+                            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(getImgSize(), getImgSize());
                             layoutParams.leftMargin = xPosition;
                             layoutParams.topMargin = yPosition;
                             newAnimalImageView.setLayoutParams(layoutParams);
@@ -202,9 +202,9 @@ public class Animal extends Lifeform {
             }
         }
 
-        if(targetSquare != null) {
+        if (targetSquare != null) {
             // Update the ImageView position
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) imageView.getLayoutParams();
+            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getImageView().getLayoutParams();
 
             int targetX = MapUtils.calculateXPosition(targetSquare.getX());
             int targetY = MapUtils.calculateYPosition(targetSquare.getY());
@@ -222,7 +222,7 @@ public class Animal extends Lifeform {
 
             layoutParams.leftMargin = newX;
             layoutParams.topMargin = newY;
-            imageView.setLayoutParams(layoutParams);
+            getImageView().setLayoutParams(layoutParams);
 
 
             if (propCounter == MapUtils.resolution) {

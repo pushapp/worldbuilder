@@ -82,7 +82,7 @@ public abstract class Lifeform implements Serializable {
         this.imageView = imageView;
     }
 
-    protected transient ImageView imageView;
+    private transient ImageView imageView;
 
     public Lifeform(String name, float camouflage, int lifespan, Position position, int propagationRate, int imgID, int habitat, int lifeFormID) {
         this.name = name;
@@ -93,6 +93,7 @@ public abstract class Lifeform implements Serializable {
         this.propagationRate = propagationRate;
         this.imgID = imgID;
         this.habitat = habitat;
+        this.lifeFormID = lifeFormID;
     }
 
     public abstract void update(Tile[][] map, World world, Context context);
