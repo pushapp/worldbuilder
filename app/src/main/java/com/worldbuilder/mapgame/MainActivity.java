@@ -7,7 +7,6 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -25,6 +24,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity
         implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener,
@@ -46,6 +52,8 @@ public class MainActivity extends AppCompatActivity
     private final Position lastTouchedPosition = new Position(0, 0);
 
     private ActivityMainBinding binding;
+
+    private final CompositeDisposable disposables = new CompositeDisposable();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,36 +77,30 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private final Handler handler = new Handler();
-    private final Runnable updateTask = new Runnable() {
-        @Override
-        public void run() {
-
-            if (world != null) {
-                incrementTime(1);
-            }
-
-            handler.postDelayed(this, timeSpeed); // Update every 1000 milliseconds (1 second)
-        }
-    };
-
     @Override
     protected void onResume() {
         super.onResume();
-        handler.post(updateTask);
+        Disposable d = Observable
+                .interval(0, timeSpeed, TimeUnit.MILLISECONDS)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(step -> incrementTime(1));
+        disposables.add(d);
         Log.d("Debug", "onResume() called");
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        handler.removeCallbacksAndMessages(null);
-        Log.d("Debug", "onPause() called");
+    protected void onStop() {
+        disposables.clear();
+        super.onStop();
     }
 
+    @SuppressWarnings("SameParameterValue")
     private void incrementTime(int steps) {
-        for (int step = 0; step < steps; step++) {
+        if (world == null) return;
+        Log.d("Debug", "incrementTime");
 
+        for (int step = 0; step < steps; step++) {
             List<Plant> plantsCopy = new ArrayList<>(world.getPlants());
             for (Plant plant : plantsCopy) {
                 plant.update(tilemap, world, this);
@@ -252,7 +254,7 @@ public class MainActivity extends AppCompatActivity
         Drawable map = new BitmapDrawable(getResources(), bitmap);
 
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());
-        binding.lifeFormContainer.setLayoutParams(lp);
+        binding.lifeFormContainer.setLayoutParams(lp) ;
         binding.lifeFormContainer.setBackground(map);
     }
 
