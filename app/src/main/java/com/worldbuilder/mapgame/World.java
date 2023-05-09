@@ -107,9 +107,11 @@ public class World {
         for (Animal animal : animals) {
             mapView.removeView(animal.getImageView());
         }
+        animals = new ArrayList<Animal>();
         for (Plant plant : plants) {
             mapView.removeView(plant.getImageView());
         }
+        plants = new ArrayList<Plant>();
     }
 
     public List<Plant> getNearbyPlants(Position position, int searchRange) {

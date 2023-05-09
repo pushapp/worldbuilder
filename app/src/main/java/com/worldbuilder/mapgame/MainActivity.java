@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -29,10 +30,10 @@ public class MainActivity extends AppCompatActivity
         implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener,
         CustomizeWorldDialog.CustomizeWorldDialogListener {
 
-    ImageView[][] imageViews;
-    Tile[][] tilemap;
-    MapGenerator mapGenerator = new MapGenerator();
-    World world = null;
+
+    private Tile[][] tilemap = null;
+    private MapGenerator mapGenerator = new MapGenerator();
+    private World world = null;
     private static final int width = 2000;
     private static final int height = 2000;
     private static final int timeSpeed = 1000; // 1 second
@@ -55,15 +56,15 @@ public class MainActivity extends AppCompatActivity
 
         //lifeformContainer OnClickListener is in this method
         initobjects();
+        tilemap = SaveGame.loadTileArrayFromFile(this);
 
-        Bitmap bitmap = SaveGame.loadBitmapFromInternalStorage(this, SaveGame.BITMAPFILE);
-        if (bitmap == null) {
+        if (tilemap == null) {
             //no Saved game... launch dialog to create new game
             CustomizeWorldDialog customizeWorldDialog = new CustomizeWorldDialog();
             customizeWorldDialog.show(getSupportFragmentManager(), "customize_world_dialog");
         } else {
             //There is game saved. load it
-            tilemap = SaveGame.loadTileArrayFromFile(this);
+            Bitmap bitmap = SaveGame.loadBitmapFromInternalStorage(this, SaveGame.BITMAPFILE);
             loadSavedGame(bitmap, tilemap);
         }
     }
@@ -189,15 +190,22 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onCreateWorld(float waterFrequency, float mountainFrequency) {
-        tilemap = mapGenerator.generateRandomMap(width, height, waterFrequency, mountainFrequency);
-        Bitmap bitmap = mapGenerator.generateRandomMapBitmap(width, height, Tile.getTileSize(), tilemap);
-        SaveGame.saveBitmapToInternalStorage(this, bitmap, SaveGame.BITMAPFILE);
-        setMapBitmap(bitmap);
 
-        tilemap = MapUtils.reduceTileArray(tilemap, MapUtils.tileMapDivisor);
-
-        world = new World(tilemap, binding.lifeFormContainer);
-        binding.dpoints.setText("Darwin Points: " + world.getDarwinPoints());
+        if(world != null){
+            //remove lifeform imageviews if starting new game
+            world.resetLifeforms();
+        }
+        LoadWorldAsync loadWorldAsync = new LoadWorldAsync(binding.loadingAnim,this,width,height,waterFrequency,mountainFrequency,binding,mapGenerator);
+        loadWorldAsync.setAsyncTaskCallback(new LoadWorldAsync.AsyncTaskCallback() {
+            @Override
+            public void onTaskCompleted(World w, Tile[][] t, Bitmap b) {
+                world = w;
+                tilemap = t;
+                setMapBitmap(b);
+                binding.dpoints.setText("Darwin Points: " + world.getDarwinPoints());
+            }
+        });
+        loadWorldAsync.execute();
     }
 
     public void loadSavedGame(Bitmap bitmap, Tile[][] map) {
@@ -264,8 +272,6 @@ public class MainActivity extends AppCompatActivity
         });
 
         binding.resetButton.setOnClickListener(view -> {
-            world.resetLifeforms();
-
             CustomizeWorldDialog customizeWorldDialog1 = new CustomizeWorldDialog();
             customizeWorldDialog1.show(getSupportFragmentManager(), "customize_world_dialog");
         });

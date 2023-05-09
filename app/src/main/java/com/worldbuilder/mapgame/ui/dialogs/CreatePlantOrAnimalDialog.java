@@ -2,6 +2,8 @@ package com.worldbuilder.mapgame.ui.dialogs;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.View;
@@ -64,6 +66,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         int height = (int) (dm.heightPixels * windowHeightRatio);
 
         getWindow().setLayout(width, height);
+        getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
     }
 
     void bindSeekBars() {
