@@ -3,6 +3,8 @@ package com.worldbuilder.mapgame;
 import android.content.Context;
 import android.widget.ImageView;
 
+import androidx.annotation.NonNull;
+import java.util.Locale;
 import java.io.Serializable;
 
 public abstract class Lifeform implements Serializable {
@@ -82,7 +84,7 @@ public abstract class Lifeform implements Serializable {
 
     protected transient ImageView imageView;
 
-    public Lifeform(String name, float camouflage, int lifespan, Position position,int propagationRate, int imgID, int habitat, int lifeFormID) {
+    public Lifeform(String name, float camouflage, int lifespan, Position position, int propagationRate, int imgID, int habitat, int lifeFormID) {
         this.name = name;
         this.position = position;
         this.age = 0;
@@ -99,12 +101,20 @@ public abstract class Lifeform implements Serializable {
         this.age++;
     }
 
-    public static int getImgSize(){
+    public static int getImgSize() {
         return 40;
     }
 
     // Getters and setters for the properties
     // ...
+
+    @NonNull
+    @Override
+    public String toString() {
+        return String.format(Locale.getDefault(),
+                "[%d] name: %s pos: %d x %d",
+                lifeFormID, name, position.getX(), position.getY());
+    }
 }
 
 

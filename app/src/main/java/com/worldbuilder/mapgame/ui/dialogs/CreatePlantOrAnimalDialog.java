@@ -27,7 +27,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
     }
 
     private static final float windowWidthRatio = .9f;
-    private static final float windowHeightRatio = .8f;
+    private static final float windowHeightRatio = .9f;
 
     private DialogAddLifeformBinding binding;
 
@@ -52,8 +52,6 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
 
         resizeDialogWindow();
 
-        params = new ItemCreationParams();
-
         bindSeekBars();
         bindButtons();
 
@@ -73,6 +71,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         binding.seedDistanceseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
+                if(!b) return;
                 params.seedDistCost = progress;
                 params.seedingDistanceProgress = progress;
 
@@ -85,6 +84,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         binding.speedSeek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
+                if(!b) return;
                 params.speedCost = progress * 4;
                 params.seedSpeedProgress = progress;
 
@@ -93,10 +93,22 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
             }
         });
 
+        //elevation habitat
+        binding.elevationHabitatseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
+                if(!b) return;
+                params.elevationProgress = progress;
+                //TODO: complete cost calculation
+                onCostsChanged();
+            }
+        });
+
         //life span
         binding.lifespanseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
+                if(!b) return;
                 params.lifespanCost = progress;
                 params.lifeSpanProgress = progress;
 
@@ -113,6 +125,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         binding.plantdispersion.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
+                if(!b) return;
                 params.propCost = progress * 2;
                 params.propagationRateProgress = progress;
 
@@ -160,6 +173,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
     }
 
     private void selectPlantCreation() {
+        resetCreationParameters();
         binding.planttv.setBackgroundResource(R.color.colorPrimary);
         binding.animaltv.setBackgroundResource(R.color.gray);
         params.isPlantSelected = true;
@@ -173,6 +187,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
     }
 
     private void selectAnimalCreation() {
+        resetCreationParameters();
         binding.planttv.setBackgroundResource(R.color.gray);
         binding.animaltv.setBackgroundResource(R.color.colorPrimary);
         params.isPlantSelected = false;
@@ -183,5 +198,15 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
 
         params.cost = params.foodCost + params.propCost + params.speedCost + params.lifespanCost;
         onCostsChanged();
+    }
+
+    private void resetCreationParameters() {
+        params = new ItemCreationParams();
+        binding.seedDistanceseek.setProgress(params.seedingDistanceProgress);
+        binding.speedSeek.setProgress(params.seedSpeedProgress);
+        binding.elevationHabitatseek.setProgress(params.elevationProgress);
+        binding.lifespanseek.setProgress(params.lifeSpanProgress);
+        binding.plantdispersion.setProgress(params.propagationRateProgress);
+        binding.foodTypeSpinner.setSelection(0);
     }
 }

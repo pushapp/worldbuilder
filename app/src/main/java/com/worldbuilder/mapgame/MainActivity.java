@@ -25,7 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener, CustomizeWorldDialog.CustomizeWorldDialogListener {
+public class MainActivity extends AppCompatActivity
+        implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener,
+        CustomizeWorldDialog.CustomizeWorldDialogListener {
 
     ImageView[][] imageViews;
     Tile[][] tilemap;
@@ -166,11 +168,11 @@ public class MainActivity extends AppCompatActivity implements CreatePlantOrAnim
             int animalRes = getRandomAnimalDrawable();
             for (Position position1 : selectedPositions) {
                 if (params.isPlantSelected) {
-                    Plant plant1 = new Plant("", .5f, lifespan, position1, propagationRate, seedingDist, plantRes, elevationHabitat, lifeFormID);
+                    Plant plant1 = new Plant("plant_" + lifeFormID, .5f, lifespan, position1, propagationRate, seedingDist, plantRes, elevationHabitat, lifeFormID);
                     addLifeformImageView(plant1);
                     world.addLifeform(plant1);
                 } else {
-                    Animal animal = new Animal("", speed, .5f, lifespan, position1, propagationRate, animalRes, elevationHabitat, lifeFormID);
+                    Animal animal = new Animal("animal_" + lifeFormID, speed, .5f, lifespan, position1, propagationRate, animalRes, elevationHabitat, lifeFormID);
                     animal.setFoodType(foodType);
                     addLifeformImageView(animal);
                     world.addLifeform(animal);

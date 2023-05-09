@@ -1,5 +1,6 @@
 package com.worldbuilder.mapgame;
 
+import android.util.Log;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
@@ -8,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class World {
+    private final static String TAG = World.class.getSimpleName();
     private Tile[][] map;
 
     public List<Plant> getPlants() {
@@ -68,8 +70,10 @@ public class World {
 
     public void addLifeform(Lifeform lifeform) {
         if (lifeform instanceof Plant) {
+            Log.d(TAG, "new plant has been added: " + lifeform);
             plants.add((Plant) lifeform);
         } else if (lifeform instanceof Animal) {
+            Log.d(TAG, "new animal has been added: " + lifeform);
             animals.add((Animal) lifeform);
         }
     }
