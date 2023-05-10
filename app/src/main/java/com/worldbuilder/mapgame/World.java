@@ -5,6 +5,8 @@ import android.util.Log;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
+import com.worldbuilder.mapgame.models.Position;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

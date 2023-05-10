@@ -5,6 +5,7 @@ import android.util.Log;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
+import com.worldbuilder.mapgame.models.Position;
 import com.worldbuilder.mapgame.models.map.TerrainType;
 
 import java.util.ArrayList;

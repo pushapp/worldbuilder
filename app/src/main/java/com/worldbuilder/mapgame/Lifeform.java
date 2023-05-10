@@ -5,6 +5,8 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 
+import com.worldbuilder.mapgame.models.Position;
+
 import java.util.Locale;
 import java.io.Serializable;
 
