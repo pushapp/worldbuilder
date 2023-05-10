@@ -1,5 +1,6 @@
 package com.worldbuilder.mapgame;
 
+import android.content.Context;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -10,7 +11,20 @@ import java.util.List;
 
 public class World {
     private final static String TAG = World.class.getSimpleName();
-    private Tile[][] map;
+
+    private final Tile[][] map;
+    private List<Plant> plants;
+    private List<Animal> animals;
+    private int darwinPoints = 1000;
+    //TODO: remove Context related things from this "controller"
+    private final RelativeLayout mapView;
+
+    public World(Tile[][] map, RelativeLayout mapView) {
+        this.map = map;
+        this.plants = new ArrayList<>();
+        this.animals = new ArrayList<>();
+        this.mapView = mapView;
+    }
 
     public List<Plant> getPlants() {
         return plants;
@@ -24,18 +38,6 @@ public class World {
         this.darwinPoints = darwinPoints;
     }
 
-    public int darwinPoints = 1000;
-
-    public int getResCounter() {
-        return resCounter;
-    }
-
-    public void setResCounter(int resCounter) {
-        this.resCounter = resCounter;
-    }
-
-    public int resCounter = 0;
-
     public void setPlants(List<Plant> plants) {
         this.plants = plants;
     }
@@ -48,24 +50,19 @@ public class World {
         this.animals = animals;
     }
 
-    private List<Plant> plants;
-    private List<Animal> animals;
-
-    public void setMapView(RelativeLayout mapView) {
-        this.mapView = mapView;
-    }
-
     public RelativeLayout getMapView() {
         return mapView;
     }
 
-    private RelativeLayout mapView;
-
-    public World(Tile[][] map, RelativeLayout mapView) {
-        this.map = map;
-        this.plants = new ArrayList<>();
-        this.animals = new ArrayList<>();
-        this.mapView = mapView;
+    //TODO: remove context (and mapView) asap!
+    public synchronized void update(int steps, Context context) {
+        Log.d(TAG, "incrementTime");
+        for (int step = 0; step < steps; step++) {
+            new ArrayList<>(plants).forEach(plant -> plant.update(map, this, context));
+            new ArrayList<>(animals).forEach(animal -> animal.update(map, this, context));
+            // Remove dead lifeforms (age >= lifespan) from the lists
+            removeDead();
+        }
     }
 
     public void addLifeform(Lifeform lifeform) {
@@ -78,25 +75,22 @@ public class World {
         }
     }
 
-    public void removeDead() {
+    private synchronized void removeDead() {
         Iterator<Plant> plantIterator = plants.iterator();
         while (plantIterator.hasNext()) {
             Plant plant = plantIterator.next();
             if (plant.getAge() >= plant.getLifespan()) {
-                ImageView plantImageView = plant.getImageView();
-                mapView.removeView(plantImageView);
+                removeViewFromMap(plant.getImageView());
                 plantIterator.remove();
                 map[plant.getPosition().getX()][plant.getPosition().getY()].setInHabitant(null);
             }
         }
 
-
         Iterator<Animal> animalIterator = animals.iterator();
         while (animalIterator.hasNext()) {
             Animal animal = animalIterator.next();
             if (animal.getAge() >= animal.getLifespan()) {
-                ImageView animalImageView = animal.getImageView();
-                mapView.removeView(animalImageView);
+                removeViewFromMap(animal.getImageView());
                 animalIterator.remove();
                 map[animal.getPosition().getX()][animal.getPosition().getY()].setInHabitant(null);
             }
@@ -104,14 +98,8 @@ public class World {
     }
 
     public void resetLifeforms() {
-        for (Animal animal : animals) {
-            mapView.removeView(animal.getImageView());
-        }
-        animals = new ArrayList<Animal>();
-        for (Plant plant : plants) {
-            mapView.removeView(plant.getImageView());
-        }
-        plants = new ArrayList<Plant>();
+        animals = new ArrayList<>();
+        plants = new ArrayList<>();
     }
 
     public List<Plant> getNearbyPlants(Position position, int searchRange) {
@@ -135,23 +123,19 @@ public class World {
     }
 
     public void removeLifeform(Lifeform lifeform) {
-        ImageView lifeformImageView = null;
         if (lifeform instanceof Plant) {
             plants.remove(lifeform);
-            lifeformImageView = ((Plant) lifeform).getImageView();
-        } else {
+        } else if (lifeform instanceof Animal) {
             animals.remove(lifeform);
-            lifeformImageView = ((Animal) lifeform).getImageView();
         }
 
-        if (lifeformImageView != null) {
-            mapView.removeView(lifeformImageView);
-        }
+        removeViewFromMap(lifeform.getImageView());
         map[lifeform.getPosition().getX()][lifeform.getPosition().getY()].setInHabitant(null);
     }
-    // Getters and setters for the properties
-    // ...
 
-    // Additional world management methods, if needed
-    // ...
+    private void removeViewFromMap(ImageView imageView) {
+        if (imageView != null) {
+            mapView.removeView(imageView);
+        }
+    }
 }

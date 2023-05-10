@@ -2,8 +2,8 @@ package com.worldbuilder.mapgame;
 
 import android.content.Context;
 import android.util.Log;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 import java.util.Random;
 
@@ -22,7 +22,7 @@ public class Plant extends Lifeform {
         // Implement plant-specific behavior, like growth or spreading
         Log.d("Debug", "update Called");
         if (propCounter == MapUtils.resolution) {
-            world.setDarwinPoints(world.darwinPoints + 1);
+            world.setDarwinPoints(world.getDarwinPoints() + 1);
             incrementAge();
             spread(map, world, context);
             propCounter = 1;
@@ -31,7 +31,7 @@ public class Plant extends Lifeform {
     }
 
     private void spread(Tile[][] map, World world, Context context) {
-        Log.d("Debug", "spread() called");
+        Log.d("Debug", "spread() for plant [" + lifeFormID + "] called");
         Random random = new Random();
         int rand = random.nextInt(100);
         if (rand < propagationRate) {
@@ -45,7 +45,7 @@ public class Plant extends Lifeform {
                 int xPosition = MapUtils.calculateXPosition(newPos.getX());
                 int yPosition = MapUtils.calculateYPosition(newPos.getY());
 
-                FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(getImgSize(), getImgSize());
+                RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(getImgSize(), getImgSize());
                 layoutParams.leftMargin = xPosition;
                 layoutParams.topMargin = yPosition;
                 newPlantImageView.setLayoutParams(layoutParams);

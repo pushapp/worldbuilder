@@ -10,6 +10,7 @@
     <string name="foodtype">FoodType</string>
     <string name="add">Add</string>
     <string name="new_world">New World</string>
+    <string name="not_enough_darwin_points">Not enough Darwin points!</string>
 
     <string-array name="lifeform_types">
         <item>Plant</item>

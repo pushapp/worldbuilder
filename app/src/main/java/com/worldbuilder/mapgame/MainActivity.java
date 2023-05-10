@@ -9,20 +9,21 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.worldbuilder.mapgame.databinding.ActivityMainBinding;
 import com.worldbuilder.mapgame.models.ItemCreationParams;
 import com.worldbuilder.mapgame.ui.dialogs.CreatePlantOrAnimalDialog;
 import com.worldbuilder.mapgame.ui.dialogs.CustomizeWorldDialog;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -98,22 +99,9 @@ public class MainActivity extends AppCompatActivity
     @SuppressWarnings("SameParameterValue")
     private void incrementTime(int steps) {
         if (world == null) return;
-        Log.d("Debug", "incrementTime");
 
-        for (int step = 0; step < steps; step++) {
-            List<Plant> plantsCopy = new ArrayList<>(world.getPlants());
-            for (Plant plant : plantsCopy) {
-                plant.update(tilemap, world, this);
-            }
-
-            List<Animal> animalsCopy = new ArrayList<>(world.getAnimals());
-            for (Animal animal : animalsCopy) {
-                animal.update(tilemap, world, this);
-            }
-            // Remove dead lifeforms (age >= lifespan) from the lists
-            world.removeDead();
-            updateDarwinTV(world);
-        }
+        world.update(steps, this);
+        updateDarwinTV(world);
     }
 
     private void addLifeformImageView(Lifeform lifeform) {
@@ -125,7 +113,7 @@ public class MainActivity extends AppCompatActivity
         int yPosition = MapUtils.calculateYPosition(lifeform.getPosition().getY());
         Log.d("LifeformPosition", "X: " + xPosition + ", Y: " + yPosition);
 
-        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(Lifeform.getImgSize(), Lifeform.getImgSize());
+        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(Lifeform.getImgSize(), Lifeform.getImgSize());
         layoutParams.leftMargin = xPosition;
         layoutParams.topMargin = yPosition;
 
@@ -141,12 +129,15 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void updateDarwinTV(World world) {
-        binding.dpoints.setText("$" + world.getDarwinPoints() + " Darwin");
+        binding.dpoints.setText(String.format(Locale.getDefault(), "$%d Darwin", world.getDarwinPoints()));
     }
 
     @Override
     public void OnLifeformAddSelected(ItemCreationParams params) {
-        if (params.cost > world.getDarwinPoints()) return;
+        if (params.cost > world.getDarwinPoints()) {
+            showNotEnoughPointsMessage();
+            return;
+        }
 
         int lifespan = params.lifeSpanProgress;
         int propagationRate = (params.propagationRateProgress / 20) + 1;
@@ -164,7 +155,7 @@ public class MainActivity extends AppCompatActivity
         Log.d("Debug", "Positions generated: " + positions.size());
 
         if (positions.size() > 4) {
-            world.setDarwinPoints(world.darwinPoints - params.cost);
+            world.setDarwinPoints(world.getDarwinPoints() - params.cost);
             updateDarwinTV(world);
 
             int plantRes = getRandomPlantDrawable();
@@ -192,20 +183,17 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onCreateWorld(float waterFrequency, float mountainFrequency) {
-
-        if(world != null){
+        if (world != null) {
             //remove lifeform imageviews if starting new game
             world.resetLifeforms();
+            binding.lifeFormContainer.removeAllViews();
         }
-        LoadWorldAsync loadWorldAsync = new LoadWorldAsync(binding.loadingAnim,this,width,height,waterFrequency,mountainFrequency,binding,mapGenerator);
-        loadWorldAsync.setAsyncTaskCallback(new LoadWorldAsync.AsyncTaskCallback() {
-            @Override
-            public void onTaskCompleted(World w, Tile[][] t, Bitmap b) {
-                world = w;
-                tilemap = t;
-                setMapBitmap(b);
-                binding.dpoints.setText("Darwin Points: " + world.getDarwinPoints());
-            }
+        LoadWorldAsync loadWorldAsync = new LoadWorldAsync(binding.loadingAnim, this, width, height, waterFrequency, mountainFrequency, binding, mapGenerator);
+        loadWorldAsync.setAsyncTaskCallback((world, tiles, bitmap) -> {
+            this.world = world;
+            tilemap = tiles;
+            setMapBitmap(bitmap);
+            updateDarwinTV(this.world);
         });
         loadWorldAsync.execute();
     }
@@ -231,7 +219,7 @@ public class MainActivity extends AppCompatActivity
         world.setPlants(plants);
         world.setDarwinPoints(darwin);
 
-        binding.dpoints.setText("Darwin Points: " + world.getDarwinPoints());
+        updateDarwinTV(world);
         for (int x = 0; x < map.length; x++) {
             for (int y = 0; y < map[0].length; y++) {
                 Log.d("debug", "in TM loop");
@@ -254,8 +242,15 @@ public class MainActivity extends AppCompatActivity
         Drawable map = new BitmapDrawable(getResources(), bitmap);
 
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(bitmap.getWidth(), bitmap.getHeight());
-        binding.lifeFormContainer.setLayoutParams(lp) ;
+        binding.lifeFormContainer.setLayoutParams(lp);
         binding.lifeFormContainer.setBackground(map);
+    }
+
+    private void showNotEnoughPointsMessage() {
+        Snackbar.make(binding.getRoot(),
+                        R.string.not_enough_darwin_points,
+                        Snackbar.LENGTH_LONG)
+                .show();
     }
 
     private void initobjects() {
