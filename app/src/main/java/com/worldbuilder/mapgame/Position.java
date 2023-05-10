@@ -1,7 +1,6 @@
 package com.worldbuilder.mapgame;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class Position {
@@ -43,7 +42,7 @@ public class Position {
     public static List<Position> sortByDistance(List<Position> positions, Position referencePosition) {
         List<Position> sortedPositions = new ArrayList<>(positions);
 
-        Collections.sort(sortedPositions, (p1, p2) -> {
+        sortedPositions.sort((p1, p2) -> {
             double distance1 = p1.distance(referencePosition);
             double distance2 = p2.distance(referencePosition);
             return Double.compare(distance1, distance2);

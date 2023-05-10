@@ -9,8 +9,8 @@ import java.util.Random;
 
 public class Plant extends Lifeform {
 
-    int propCounter = 1;
-    int seedingDist;
+    private int propCounter = 1;
+    private final int seedingDist;
 
     public Plant(String name, float camouflage, int lifespan, Position position, int propagationRate, int seedingDist, int imgID, int habitat, int lifeFormID) {
         super(name, camouflage, lifespan, position, propagationRate, imgID, habitat, lifeFormID);
@@ -31,7 +31,7 @@ public class Plant extends Lifeform {
     }
 
     private void spread(Tile[][] map, World world, Context context) {
-        Log.d("Debug", "spread() for plant [" + lifeFormID + "] called");
+        Log.d("Debug", "spread() for plant [" + getLifeFormID() + "] called");
         Random random = new Random();
         int rand = random.nextInt(100);
         if (rand < propagationRate) {
@@ -39,7 +39,7 @@ public class Plant extends Lifeform {
             Position newPos = MapUtils.findPlantSproutingPosition(this, map, seedingDist, false);
             Log.d("Debug", "New position: " + (newPos != null ? newPos.toString() : "null"));
             if (newPos != null) {
-                Plant plant = new Plant(name, camouflage, lifespan, newPos, propagationRate, seedingDist, imgID, habitat, lifeFormID);
+                Plant plant = new Plant(name, camouflage, lifespan, newPos, propagationRate, seedingDist, imgID, habitat, getLifeFormID());
                 ImageView newPlantImageView = new ImageView(context);
                 newPlantImageView.setImageResource(plant.imgID);
                 int xPosition = MapUtils.calculateXPosition(newPos.getX());

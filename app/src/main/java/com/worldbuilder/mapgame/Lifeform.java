@@ -4,16 +4,42 @@ import android.content.Context;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
+
 import java.util.Locale;
 import java.io.Serializable;
 
 public abstract class Lifeform implements Serializable {
 
+    private final int lifeFormID;
+    private Position position;
+    private transient ImageView imageView;
+
+    protected String name;
+    protected int age;
+    protected float camouflage;
+    protected int lifespan;
+    protected int imgID;
+    protected int habitat;
+    protected int propagationRate;
+
+    public Lifeform(String name, float camouflage, int lifespan, Position position, int propagationRate, int imgID, int habitat, int lifeFormID) {
+        this.name = name;
+        this.position = position;
+        this.age = 0;
+        this.camouflage = camouflage;
+        this.lifespan = lifespan;
+        this.propagationRate = propagationRate;
+        this.imgID = imgID;
+        this.habitat = habitat;
+        this.lifeFormID = lifeFormID;
+    }
+
+    public abstract void update(Tile[][] map, World world, Context context);
+
+    //getters & setters
     public int getLifeFormID() {
         return lifeFormID;
     }
-
-    public int lifeFormID = 0;
 
     public Position getPosition() {
         return position;
@@ -22,8 +48,6 @@ public abstract class Lifeform implements Serializable {
     public void setPosition(Position position) {
         this.position = position;
     }
-
-    public Position position;
 
     public int getAge() {
         return age;
@@ -41,14 +65,9 @@ public abstract class Lifeform implements Serializable {
         this.camouflage = camouflage;
     }
 
-
     public String getName() {
         return name;
     }
-
-    protected String name;
-    protected int age;
-    protected float camouflage;
 
     public int getPropagationRate() {
         return propagationRate;
@@ -58,8 +77,6 @@ public abstract class Lifeform implements Serializable {
         this.propagationRate = propagationRate;
     }
 
-    protected int propagationRate;
-
     public int getLifespan() {
         return lifespan;
     }
@@ -67,12 +84,6 @@ public abstract class Lifeform implements Serializable {
     public void setLifespan(int lifespan) {
         this.lifespan = lifespan;
     }
-
-    protected int lifespan;
-
-    protected int imgID;
-
-    protected int habitat;
 
     public ImageView getImageView() {
         return imageView;
@@ -82,22 +93,6 @@ public abstract class Lifeform implements Serializable {
         this.imageView = imageView;
     }
 
-    private transient ImageView imageView;
-
-    public Lifeform(String name, float camouflage, int lifespan, Position position, int propagationRate, int imgID, int habitat, int lifeFormID) {
-        this.name = name;
-        this.position = position;
-        this.age = 0;
-        this.camouflage = camouflage;
-        this.lifespan = lifespan;
-        this.propagationRate = propagationRate;
-        this.imgID = imgID;
-        this.habitat = habitat;
-        this.lifeFormID = lifeFormID;
-    }
-
-    public abstract void update(Tile[][] map, World world, Context context);
-
     public void incrementAge() {
         this.age++;
     }
@@ -105,9 +100,6 @@ public abstract class Lifeform implements Serializable {
     public static int getImgSize() {
         return 40;
     }
-
-    // Getters and setters for the properties
-    // ...
 
     @NonNull
     @Override

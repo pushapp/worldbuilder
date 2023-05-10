@@ -5,47 +5,22 @@ import android.util.Log;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
+import com.worldbuilder.mapgame.models.map.TerrainType;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Animal extends Lifeform {
-    int propCounter = 1;
-    Position targetSquare = null;
-
-    public int getEyesight() {
-        return eyesight;
-    }
-
-    public void setEyesight(int eyesight) {
-        this.eyesight = eyesight;
-    }
-
     private int eyesight = 40;
-    private int speed;
-    public double energy;
-
-    public String getFoodType() {
-        return foodType;
-    }
-
-    public void setFoodType(String foodType) {
-        this.foodType = foodType;
-    }
-
+    private final int speed;
+    private double energy;
     private String foodType = "Herbivore";
-
-    public boolean isSwimmer() {
-        return isSwimmer;
-    }
-
-    public void setSwimmer(boolean swimmer) {
-        isSwimmer = swimmer;
-    }
-
     private boolean isSwimmer = false;
 
+    private int propCounter = 1;
+    private Position targetSquare = null;
 
     public Animal(String name, int speed, float camouflage, int lifespan, Position position, int propagationRate, int imgID, int habitat, int lifeFormID) {
         super(name, camouflage, lifespan, position, propagationRate * 4, imgID, habitat, lifeFormID);
@@ -80,13 +55,37 @@ public class Animal extends Lifeform {
         propCounter++;
     }
 
+    public int getEyesight() {
+        return eyesight;
+    }
+
+    public void setEyesight(int eyesight) {
+        this.eyesight = eyesight;
+    }
+
+    public String getFoodType() {
+        return foodType;
+    }
+
+    public void setFoodType(String foodType) {
+        this.foodType = foodType;
+    }
+
+    public boolean isSwimmer() {
+        return isSwimmer;
+    }
+
+    public void setSwimmer(boolean swimmer) {
+        isSwimmer = swimmer;
+    }
+
     // Animal-specific methods, if any
     // ...
 
     public void procreate(Tile[][] map, World world, Context context) {
         ArrayList<Animal> temp = new ArrayList<>(world.getAnimals());
         for (Animal animal : temp) {
-            if (MapUtils.arePositionsClose(animal.getPosition(), position, 1)) {
+            if (MapUtils.arePositionsClose(animal.getPosition(), getPosition(), 1)) {
                 // Check if both animals are within 30 - 60% of their lifespan
                 float agePercentageThisAnimal = (float) age / (float) lifespan;
                 float agePercentageOtherAnimal = (float) animal.getAge() / (float) animal.getLifespan();
@@ -102,7 +101,7 @@ public class Animal extends Lifeform {
                         Position newPos = MapUtils.findNewOffspringPosition(map, this);
 
                         if (newPos != null) {
-                            Animal newAnimal = new Animal(name, speed, camouflage, lifespan, newPos, propagationRate, imgID, habitat, lifeFormID);
+                            Animal newAnimal = new Animal(name, speed, camouflage, lifespan, newPos, propagationRate, imgID, habitat, getLifeFormID());
                             ImageView newAnimalImageView = new ImageView(context);
                             newAnimalImageView.setImageResource(newAnimal.imgID);
                             int xPosition = MapUtils.calculateXPosition(newPos.getX());
@@ -118,8 +117,6 @@ public class Animal extends Lifeform {
                             world.getMapView().addView(newAnimalImageView); // Add the ImageView to the layout
                             map[newPos.getX()][newPos.getY()].setInHabitant(animal); //set the animal on the Tile in the map[][] array
                         }
-
-
                     }
                 }
             }
@@ -130,8 +127,8 @@ public class Animal extends Lifeform {
         if (targetSquare == null) {
 
             // Get the current position
-            int x = position.getX();
-            int y = position.getY();
+            int x = getPosition().getX();
+            int y = getPosition().getY();
             // Calculate the new position based on the animal's speed
             // and world conditions (e.g., terrain, obstacles)
             int[] dx = {-1, 0, 1, -1, 1, -1, 0, 1}; // Possible x-axis movements
@@ -143,10 +140,9 @@ public class Animal extends Lifeform {
             int updatedY = y + dy[randomIndex] * (int) Math.round(speed);
 
 
-            List<Position> surroundings = MapUtils.generateSurroundingPositions(position, map, false, 1, eyesight);
-            Position.sortByDistance(surroundings, position);
+            List<Position> surroundings = MapUtils.generateSurroundingPositions(getPosition(), map, false, 1, eyesight);
+            Position.sortByDistance(surroundings, getPosition());
             Position targetedPos = null;
-
 
             for (Position position : surroundings) {
                 Lifeform objectInQuestion = map[position.getX()][position.getY()].getInHabitant();
@@ -154,24 +150,24 @@ public class Animal extends Lifeform {
                 if (energy < 40) {
                     if (foodType.equals("Herbivore")) {
                         if (objectInQuestion instanceof Plant) {
-                            targetedPos = MapUtils.findPositionTowardsTarget(this.position, position, speed);
+                            targetedPos = MapUtils.findPositionTowardsTarget(getPosition(), position, speed);
                         }
                     }
                     if (foodType.equals("Carnivore")) {
                         if (objectInQuestion instanceof Animal) {
-                            targetedPos = MapUtils.findPositionTowardsTarget(this.position, position, speed);
+                            targetedPos = MapUtils.findPositionTowardsTarget(getPosition(), position, speed);
                         }
                     }
                     if (foodType.equals("Omnivore")) {
                         if (objectInQuestion != null) {
-                            targetedPos = MapUtils.findPositionTowardsTarget(this.position, position, speed);
+                            targetedPos = MapUtils.findPositionTowardsTarget(getPosition(), position, speed);
                         }
                     }
                 }
 
-                if (objectInQuestion instanceof Animal && ((Animal) objectInQuestion).getFoodType().equals("Carnivore") && objectInQuestion.getLifeFormID() != lifeFormID) {
+                if (objectInQuestion instanceof Animal && ((Animal) objectInQuestion).getFoodType().equals("Carnivore") && objectInQuestion.getLifeFormID() != getLifeFormID()) {
                     //run away from predator
-                    targetedPos = MapUtils.findPositionAwayFromTarget(this.position, position, speed);
+                    targetedPos = MapUtils.findPositionAwayFromTarget(this.getPosition(), position, speed);
                     Log.d("runAwayPos", "Run Away Pos: X = " + targetedPos.getX() + "Y = " + targetedPos.getY());
                 }
             }
@@ -192,10 +188,10 @@ public class Animal extends Lifeform {
             //check that tile meets proper conditions
             if (isSwimmer) {
                 // Animal can swim, so it can move on water tiles
-                canMoveToTile = newTile.getTerrainType() == Tile.TerrainType.WATER;
+                canMoveToTile = newTile.getTerrainType() == TerrainType.WATER;
             } else {
                 // Animal can't swim, so it can move on all tiles except water
-                canMoveToTile = newTile.getTerrainType() != Tile.TerrainType.WATER;
+                canMoveToTile = newTile.getTerrainType() != TerrainType.WATER;
             }
             if (canMoveToTile) {
                 targetSquare = new Position(updatedX, updatedY);
@@ -208,8 +204,8 @@ public class Animal extends Lifeform {
 
             int targetX = MapUtils.calculateXPosition(targetSquare.getX());
             int targetY = MapUtils.calculateYPosition(targetSquare.getY());
-            int currentX = MapUtils.calculateXPosition(position.getX());
-            int currentY = MapUtils.calculateYPosition(position.getY());
+            int currentX = MapUtils.calculateXPosition(getPosition().getX());
+            int currentY = MapUtils.calculateYPosition(getPosition().getY());
 
             int difY = targetY - currentY;
             int difX = targetX - currentX;
@@ -217,21 +213,19 @@ public class Animal extends Lifeform {
             int movementX = (difX / MapUtils.resolution) * propCounter;
             int movementY = (difY / MapUtils.resolution) * propCounter;
 
-            int newX = MapUtils.calculateXPosition(position.getX()) + movementX;
-            int newY = MapUtils.calculateYPosition(position.getY()) + movementY;
+            int newX = MapUtils.calculateXPosition(getPosition().getX()) + movementX;
+            int newY = MapUtils.calculateYPosition(getPosition().getY()) + movementY;
 
             layoutParams.leftMargin = newX;
             layoutParams.topMargin = newY;
             getImageView().setLayoutParams(layoutParams);
 
-
             if (propCounter == MapUtils.resolution) {
-                map[position.getX()][position.getY()].setInHabitant(null);
+                map[getPosition().getX()][getPosition().getY()].setInHabitant(null);
                 // Update the animal's position
-                position = targetSquare;
+                setPosition(targetSquare);
 
-                map[position.getX()][position.getY()].setInHabitant(this);
-
+                map[getPosition().getX()][getPosition().getY()].setInHabitant(this);
 
                 targetSquare = null;
             }
@@ -243,10 +237,10 @@ public class Animal extends Lifeform {
 
         List<Lifeform> nearbyEdibles = new ArrayList<>();
         if (foodType.equals("Herbivore")) {
-            nearbyEdibles.addAll(world.getNearbyPlants(position, 1)); // Adjust the value to control the search range
+            nearbyEdibles.addAll(world.getNearbyPlants(getPosition(), 1)); // Adjust the value to control the search range
         }
         if (foodType.equals("Carnivore")) {
-            List<Animal> animals = world.getNearbyAnimals(position, 1);
+            List<Animal> animals = world.getNearbyAnimals(getPosition(), 1);
             for (Animal animal : animals) {
                 if (animal.foodType.equals("Herbivore")) {
                     nearbyEdibles.add(animal);
@@ -254,8 +248,8 @@ public class Animal extends Lifeform {
             }
         }
         if (foodType.equals("Omnivore")) {
-            nearbyEdibles.addAll(world.getNearbyAnimals(position, 1));
-            nearbyEdibles.addAll(world.getNearbyPlants(position, 1)); // Adjust the value to control the search range
+            nearbyEdibles.addAll(world.getNearbyAnimals(getPosition(), 1));
+            nearbyEdibles.addAll(world.getNearbyPlants(getPosition(), 1)); // Adjust the value to control the search range
         }
         for (Lifeform lifeform : nearbyEdibles) {
             if (energy == 100) {
@@ -266,6 +260,4 @@ public class Animal extends Lifeform {
             world.removeLifeform(lifeform);
         }
     }
-
-
 }
