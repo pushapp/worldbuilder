@@ -1,21 +1,15 @@
 package com.worldbuilder.mapgame;
 
+import com.worldbuilder.mapgame.models.map.TerrainType;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class Tile {
-    public enum TerrainType {
-        WATER,
-        BEACH,
-        FOREST,
-        GRASSLAND,
-        MOUNTAIN,
-        DESERT
-    }
-
-    private TerrainType terrainType;
-    private int elevation;
+    private final TerrainType terrainType;
+    private final int elevation;
     private int color;
+    private Lifeform inHabitant;
 
     public Tile(TerrainType terrainType, int elevation) {
         this.terrainType = terrainType;
@@ -29,8 +23,6 @@ public class Tile {
     public void setInHabitant(Lifeform inHabitant) {
         this.inHabitant = inHabitant;
     }
-
-    private Lifeform inHabitant = null;
 
     public TerrainType getTerrainType() {
         return terrainType;

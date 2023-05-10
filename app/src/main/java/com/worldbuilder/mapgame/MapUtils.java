@@ -1,6 +1,10 @@
 package com.worldbuilder.mapgame;
 
+import static com.worldbuilder.mapgame.models.map.TerrainType.WATER;
+
 import androidx.annotation.VisibleForTesting;
+
+import com.worldbuilder.mapgame.models.map.TerrainType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,7 +43,7 @@ public class MapUtils {
                 Tile newTile = map[newX][newY];
 
                 if (Math.abs(parent.habitat - newTile.getElevation()) < 20 &&
-                        newTile.getTerrainType() != Tile.TerrainType.WATER && newTile.getInHabitant() == null) {
+                        newTile.getTerrainType() != WATER && newTile.getInHabitant() == null) {
                     // Offspring can swim, so it can be placed on water tiles
                     return new Position(newX, newY);
                 }
@@ -85,7 +89,7 @@ public class MapUtils {
                 Tile newTile = map[newX][newY];
 
                 // Check that the tile meets the proper conditions
-                if (Math.abs(plant.habitat - newTile.getElevation()) < 20 && newTile.getTerrainType() != Tile.TerrainType.WATER && newTile.getInHabitant() == null) {
+                if (Math.abs(plant.habitat - newTile.getElevation()) < 20 && newTile.getTerrainType() != WATER && newTile.getInHabitant() == null) {
                     // Plant can grow in water, so it can be placed on water tiles
                     return new Position(newX, newY);
                 }
@@ -125,11 +129,11 @@ public class MapUtils {
                 if (newX >= 0 && newX < map.length && newY >= 0 && newY < map[0].length && distance >= minDistance && distance <= maxDistance) {
                     Tile tile = map[newX][newY];
                     if (isSwimmer) {
-                        if (tile.getTerrainType() == Tile.TerrainType.WATER) {
+                        if (tile.getTerrainType() == WATER) {
                             validPositions.add(new Position(newX, newY));
                         }
                     } else {
-                        if (tile.getTerrainType() != Tile.TerrainType.WATER) {
+                        if (tile.getTerrainType() != WATER) {
                             validPositions.add(new Position(newX, newY));
                         }
                     }
@@ -155,7 +159,7 @@ public class MapUtils {
         for (int i = 0; i < reducedWidth; i++) {
             for (int j = 0; j < reducedHeight; j++) {
                 int totalElevation = 0;
-                int[] terrainTypeCounts = new int[Tile.TerrainType.values().length];
+                int[] terrainTypeCounts = new int[TerrainType.values().length];
 
                 for (int x = i * divisor; x < (i + 1) * divisor; x++) {
                     for (int y = j * divisor; y < (j + 1) * divisor; y++) {
@@ -172,7 +176,7 @@ public class MapUtils {
                         maxTerrainTypeIndex = k;
                     }
                 }
-                Tile.TerrainType dominantTerrainType = Tile.TerrainType.values()[maxTerrainTypeIndex];
+                TerrainType dominantTerrainType = TerrainType.values()[maxTerrainTypeIndex];
                 reducedTiles[i][j] = new Tile(dominantTerrainType, averageElevation);
             }
         }
