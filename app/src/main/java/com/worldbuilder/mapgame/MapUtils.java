@@ -184,12 +184,18 @@ public class MapUtils {
         return reducedTiles;
     }
 
-    public static int calculateXPosition(int xIndex) {
+    public static int TiletoPixelX(int xIndex) {
         return (xIndex * Tile.getTileSize()) * tileMapDivisor;
     }
 
-    public static int calculateYPosition(int yIndex) {
+    public static int TiletoPixelY(int yIndex) {
         return (yIndex * Tile.getTileSize()) * tileMapDivisor;
+    }
+    public static int PixeltoTileX(int xIndex){
+        return (xIndex  / Tile.getTileSize()) / tileMapDivisor;
+    }
+    public static int PixeltoTileY(int yIndex){
+        return (yIndex  / Tile.getTileSize()) / tileMapDivisor;
     }
 
     public static Position findPositionTowardsTarget(Position start, Position end, int speed) {

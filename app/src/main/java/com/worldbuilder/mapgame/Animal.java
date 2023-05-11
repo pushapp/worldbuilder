@@ -105,8 +105,8 @@ public class Animal extends Lifeform {
                             Animal newAnimal = new Animal(name, speed, camouflage, lifespan, newPos, propagationRate, imgID, habitat, getLifeFormID());
                             ImageView newAnimalImageView = new ImageView(context);
                             newAnimalImageView.setImageResource(newAnimal.imgID);
-                            int xPosition = MapUtils.calculateXPosition(newPos.getX());
-                            int yPosition = MapUtils.calculateYPosition(newPos.getY());
+                            int xPosition = MapUtils.TiletoPixelX(newPos.getX());
+                            int yPosition = MapUtils.TiletoPixelY(newPos.getY());
 
                             RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(getImgSize(), getImgSize());
                             layoutParams.leftMargin = xPosition;
@@ -203,10 +203,10 @@ public class Animal extends Lifeform {
             // Update the ImageView position
             RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getImageView().getLayoutParams();
 
-            int targetX = MapUtils.calculateXPosition(targetSquare.getX());
-            int targetY = MapUtils.calculateYPosition(targetSquare.getY());
-            int currentX = MapUtils.calculateXPosition(getPosition().getX());
-            int currentY = MapUtils.calculateYPosition(getPosition().getY());
+            int targetX = MapUtils.TiletoPixelX(targetSquare.getX());
+            int targetY = MapUtils.TiletoPixelY(targetSquare.getY());
+            int currentX = MapUtils.TiletoPixelX(getPosition().getX());
+            int currentY = MapUtils.TiletoPixelY(getPosition().getY());
 
             int difY = targetY - currentY;
             int difX = targetX - currentX;
@@ -214,8 +214,8 @@ public class Animal extends Lifeform {
             int movementX = (difX / MapUtils.resolution) * propCounter;
             int movementY = (difY / MapUtils.resolution) * propCounter;
 
-            int newX = MapUtils.calculateXPosition(getPosition().getX()) + movementX;
-            int newY = MapUtils.calculateYPosition(getPosition().getY()) + movementY;
+            int newX = MapUtils.TiletoPixelX(getPosition().getX()) + movementX;
+            int newY = MapUtils.TiletoPixelY(getPosition().getY()) + movementY;
 
             layoutParams.leftMargin = newX;
             layoutParams.topMargin = newY;

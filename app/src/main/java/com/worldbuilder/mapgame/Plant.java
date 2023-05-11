@@ -44,8 +44,8 @@ public class Plant extends Lifeform {
                 Plant plant = new Plant(name, camouflage, lifespan, newPos, propagationRate, seedingDist, imgID, habitat, getLifeFormID());
                 ImageView newPlantImageView = new ImageView(context);
                 newPlantImageView.setImageResource(plant.imgID);
-                int xPosition = MapUtils.calculateXPosition(newPos.getX());
-                int yPosition = MapUtils.calculateYPosition(newPos.getY());
+                int xPosition = MapUtils.TiletoPixelX(newPos.getX());
+                int yPosition = MapUtils.TiletoPixelY(newPos.getY());
 
                 RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(getImgSize(), getImgSize());
                 layoutParams.leftMargin = xPosition;

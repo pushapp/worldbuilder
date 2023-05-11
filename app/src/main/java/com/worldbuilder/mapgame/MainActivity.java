@@ -21,6 +21,7 @@ import com.worldbuilder.mapgame.models.ItemCreationParams;
 import com.worldbuilder.mapgame.models.Position;
 import com.worldbuilder.mapgame.ui.dialogs.CreatePlantOrAnimalDialog;
 import com.worldbuilder.mapgame.ui.dialogs.CustomizeWorldDialog;
+import com.worldbuilder.mapgame.ui.dialogs.MapClickDialog;
 
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +34,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import kotlin.Unit;
 
 public class MainActivity extends AppCompatActivity
         implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener,
@@ -52,6 +54,7 @@ public class MainActivity extends AppCompatActivity
     private Map<Animal, ImageView> animalImageViews = new HashMap<>();
 
     private final Position lastTouchedPosition = new Position(0, 0);
+    private final Position mapClickDialogPlacement = new Position(0, 0);
 
     private ActivityMainBinding binding;
 
@@ -110,8 +113,8 @@ public class MainActivity extends AppCompatActivity
 
         lifeformImageView.setImageResource(lifeform.imgID);
 
-        int xPosition = MapUtils.calculateXPosition(lifeform.getPosition().getX());
-        int yPosition = MapUtils.calculateYPosition(lifeform.getPosition().getY());
+        int xPosition = MapUtils.TiletoPixelX(lifeform.getPosition().getX());
+        int yPosition = MapUtils.TiletoPixelY(lifeform.getPosition().getY());
         Log.d("LifeformPosition", "X: " + xPosition + ", Y: " + yPosition);
 
         RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(Lifeform.getImgSize(), Lifeform.getImgSize());
@@ -257,21 +260,51 @@ public class MainActivity extends AppCompatActivity
     private void initobjects() {
         binding.lifeFormContainer.setOnTouchListener((view, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                int x = (int) (event.getX() / Tile.getTileSize()) / MapUtils.tileMapDivisor;
-                int y = (int) (event.getY() / Tile.getTileSize()) / MapUtils.tileMapDivisor;
+                int x =  MapUtils.PixeltoTileX((int)event.getX());
+                int y = MapUtils.PixeltoTileY((int)event.getY());
                 Log.d("debug", "IN ONTOUCH: x = " + x + "y = " + y);
                 lastTouchedPosition.set(x, y);
             }
             return false;
         });
+
+        binding.layoutForClicklistener.setOnTouchListener((view, event) -> {
+            if(event.getAction() == MotionEvent.ACTION_DOWN){
+                //needs to grab x and y from layout outside of scrollview to place dialog correctly on the screen
+                int x =  (int)event.getX();
+                int y = (int) event.getY();
+                mapClickDialogPlacement.set(x,y);
+                Log.d("debug", "Dialog Placement: x = " + x + "y = " + y);
+            }
+            return false;
+        });
+
+
+
         binding.lifeFormContainer.setOnClickListener(view -> {
-            CreatePlantOrAnimalDialog dialog = new CreatePlantOrAnimalDialog(this);
-            dialog.show();
+            MapClickDialog mapClickDialog = new MapClickDialog(
+                    this,
+                    ()-> showAddLifeformDialog(),
+                    () -> showLifefomListDialog()
+            );
+            mapClickDialog.showPopupWindow(mapClickDialogPlacement);
+
         });
 
         binding.resetButton.setOnClickListener(view -> {
             CustomizeWorldDialog customizeWorldDialog1 = new CustomizeWorldDialog();
             customizeWorldDialog1.show(getSupportFragmentManager(), "customize_world_dialog");
         });
+    }
+
+    private Unit showAddLifeformDialog(){
+        CreatePlantOrAnimalDialog addLifeformDialog = new CreatePlantOrAnimalDialog(this);
+        addLifeformDialog.show();
+        return Unit.INSTANCE;
+    }
+    private Unit showLifefomListDialog(){
+        //not created yet. shows a recyclerview with lifeforms in area to view specific lifeforms stats
+
+        return Unit.INSTANCE;
     }
 }
