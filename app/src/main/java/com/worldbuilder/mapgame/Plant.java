@@ -3,9 +3,9 @@ package com.worldbuilder.mapgame;
 import android.content.Context;
 import android.util.Log;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 
 import com.worldbuilder.mapgame.models.Position;
+import com.worldbuilder.mapgame.utils.LifeformUtils;
 
 import java.util.Random;
 
@@ -42,17 +42,7 @@ public class Plant extends Lifeform {
             Log.d("Debug", "New position: " + (newPos != null ? newPos.toString() : "null"));
             if (newPos != null) {
                 Plant plant = new Plant(name, camouflage, lifespan, newPos, propagationRate, seedingDist, imgID, habitat, getLifeFormID());
-                ImageView newPlantImageView = new ImageView(context);
-                newPlantImageView.setImageResource(plant.imgID);
-                int xPosition = MapUtils.TiletoPixelX(newPos.getX());
-                int yPosition = MapUtils.TiletoPixelY(newPos.getY());
-
-                RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(getImgSize(), getImgSize());
-                layoutParams.leftMargin = xPosition;
-                layoutParams.topMargin = yPosition;
-                newPlantImageView.setLayoutParams(layoutParams);
-
-                plant.setImageView(newPlantImageView);
+                ImageView newPlantImageView = LifeformUtils.INSTANCE.createLifeformImageView(plant, context);
                 world.addLifeform(plant);
                 map[newPos.getX()][newPos.getY()].setInHabitant(plant);
                 world.getMapView().addView(newPlantImageView); // Add the ImageView to the layout

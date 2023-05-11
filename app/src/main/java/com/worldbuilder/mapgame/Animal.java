@@ -7,6 +7,7 @@ import android.widget.RelativeLayout;
 
 import com.worldbuilder.mapgame.models.Position;
 import com.worldbuilder.mapgame.models.map.TerrainType;
+import com.worldbuilder.mapgame.utils.LifeformUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,17 +104,8 @@ public class Animal extends Lifeform {
 
                         if (newPos != null) {
                             Animal newAnimal = new Animal(name, speed, camouflage, lifespan, newPos, propagationRate, imgID, habitat, getLifeFormID());
-                            ImageView newAnimalImageView = new ImageView(context);
-                            newAnimalImageView.setImageResource(newAnimal.imgID);
-                            int xPosition = MapUtils.TiletoPixelX(newPos.getX());
-                            int yPosition = MapUtils.TiletoPixelY(newPos.getY());
+                            ImageView newAnimalImageView = LifeformUtils.INSTANCE.createLifeformImageView(newAnimal, context);
 
-                            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(getImgSize(), getImgSize());
-                            layoutParams.leftMargin = xPosition;
-                            layoutParams.topMargin = yPosition;
-                            newAnimalImageView.setLayoutParams(layoutParams);
-
-                            newAnimal.setImageView(newAnimalImageView);
                             world.addLifeform(newAnimal);
                             world.getMapView().addView(newAnimalImageView); // Add the ImageView to the layout
                             map[newPos.getX()][newPos.getY()].setInHabitant(animal); //set the animal on the Tile in the map[][] array
@@ -200,9 +192,6 @@ public class Animal extends Lifeform {
         }
 
         if (targetSquare != null) {
-            // Update the ImageView position
-            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getImageView().getLayoutParams();
-
             int targetX = MapUtils.TiletoPixelX(targetSquare.getX());
             int targetY = MapUtils.TiletoPixelY(targetSquare.getY());
             int currentX = MapUtils.TiletoPixelX(getPosition().getX());
@@ -217,6 +206,8 @@ public class Animal extends Lifeform {
             int newX = MapUtils.TiletoPixelX(getPosition().getX()) + movementX;
             int newY = MapUtils.TiletoPixelY(getPosition().getY()) + movementY;
 
+            // Update the ImageView position
+            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getImageView().getLayoutParams();
             layoutParams.leftMargin = newX;
             layoutParams.topMargin = newY;
             getImageView().setLayoutParams(layoutParams);
