@@ -91,6 +91,10 @@ public abstract class Lifeform implements Serializable {
         return imageView;
     }
 
+    public int getImgID() {
+        return imgID;
+    }
+
     public void setImageView(ImageView imageView) {
         this.imageView = imageView;
     }

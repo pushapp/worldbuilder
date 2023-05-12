@@ -3,14 +3,11 @@ package com.worldbuilder.mapgame;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
-import android.view.View;
 
-import com.airbnb.lottie.LottieAnimationView;
 import com.worldbuilder.mapgame.databinding.ActivityMainBinding;
 
 public class LoadWorldAsync extends AsyncTask<Void, Void, Void> {
 
-    private LottieAnimationView animationView;
     private int width;
     private int height;
     private Context context;
@@ -24,8 +21,8 @@ public class LoadWorldAsync extends AsyncTask<Void, Void, Void> {
     private World world;
     private Tile[][] map;
     private Bitmap bm;
-    public LoadWorldAsync(LottieAnimationView animationView, Context context, int width, int height, float waterFrequency, float mountainFrequency, ActivityMainBinding binding, MapGenerator mapGenerator) {
-        this.animationView = animationView;
+
+    public LoadWorldAsync(Context context, int width, int height, float waterFrequency, float mountainFrequency, ActivityMainBinding binding, MapGenerator mapGenerator) {
         this.height = height;
         this.width = width;
         this.context = context;
@@ -33,14 +30,6 @@ public class LoadWorldAsync extends AsyncTask<Void, Void, Void> {
         this.mountainFreq = mountainFrequency;
         this.binding = binding;
         this.mapGenerator = mapGenerator;
-
-    }
-
-    @Override
-    protected void onPreExecute() {
-        super.onPreExecute();
-        animationView.setVisibility(View.VISIBLE);
-        binding.lifeFormContainer.setBackground(null);
     }
 
     @Override
@@ -61,13 +50,13 @@ public class LoadWorldAsync extends AsyncTask<Void, Void, Void> {
     @Override
     protected void onPostExecute(Void aVoid) {
         super.onPostExecute(aVoid);
-        asyncTaskCallback.onTaskCompleted(world,map,bm);
-        animationView.setVisibility(View.INVISIBLE);
+        asyncTaskCallback.onTaskCompleted(world, map, bm);
     }
 
-    public void setAsyncTaskCallback(AsyncTaskCallback callback){
+    public void setAsyncTaskCallback(AsyncTaskCallback callback) {
         this.asyncTaskCallback = callback;
     }
+
     public interface AsyncTaskCallback {
         void onTaskCompleted(World world, Tile[][] tilemap, Bitmap bitmap);
     }
