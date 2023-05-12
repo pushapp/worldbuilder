@@ -131,18 +131,21 @@ public class MainActivity extends AppCompatActivity
 
         int lifespan = params.lifeSpanProgress;
         int propagationRate = (params.propagationRateProgress / 20) + 1;
-        int elevationHabitat = params.elevationProgress;
+        int elevationHabitat = (params.elevationProgress * MapUtils.getMaxElevation(tilemap))/100; //adjust elevation meter to the elevation of the map
         int seedingDist = (params.seedingDistanceProgress / 5) + 1;
         String foodType = params.selectedFoodType;
         int speed = (params.seedSpeedProgress / 20) + 1;
         // Get values from other input fields
+
+
+        Log.d("LifeformStats","elevation: " + elevationHabitat + " propagation: " + propagationRate + " speed: " + speed + " seedingDist: " + seedingDist + " lifespan: " + lifespan);
 
         List<Position> positions = MapUtils.generateSurroundingPositions(lastTouchedPosition, tilemap, false, 1, 3);
 
         List<Position> selectedPositions = MapUtils.getRandomPositions(positions, 5);
         lifeFormID++;
         //generate 5 of the lifeforms
-        Log.d("Debug", "Positions generated: " + positions.size());
+        Log.d("NumOfGeneratedPositions", "Positions generated: " + positions.size());
 
         if (positions.size() > 4) {
             world.setDarwinPoints(world.getDarwinPoints() - params.cost);
@@ -211,11 +214,9 @@ public class MainActivity extends AppCompatActivity
 
         for (int x = 0; x < map.length; x++) {
             for (int y = 0; y < map[0].length; y++) {
-                Log.d("debug", "in TM loop");
                 if (map[x][y].getInHabitant() != null) {
 
                     Lifeform lf = map[x][y].getInHabitant();
-                    Log.d("debug", "lf at " + lf.getPosition().getX() + " , " + lf.getPosition().getY());
                     world.addLifeform(lf);
                     addLifeformImageView(lf);
 
@@ -247,8 +248,9 @@ public class MainActivity extends AppCompatActivity
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 int x = MapUtils.PixeltoTileX((int) event.getX());
                 int y = MapUtils.PixeltoTileY((int) event.getY());
-                Log.d("debug", "IN ONTOUCH: x = " + x + "y = " + y);
+                Log.d("TileClicked", "Tile: x = " + x + "y = " + y);
                 lastTouchedPosition.set(x, y);
+                Log.d("TileClicked", "Click Elevation: " + tilemap[x][y].getElevation());
             }
             return false;
         });

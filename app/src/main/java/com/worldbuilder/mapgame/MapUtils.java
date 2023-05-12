@@ -2,6 +2,8 @@ package com.worldbuilder.mapgame;
 
 import static com.worldbuilder.mapgame.models.map.TerrainType.WATER;
 
+import android.util.Log;
+
 import androidx.annotation.VisibleForTesting;
 
 import com.worldbuilder.mapgame.models.Position;
@@ -243,5 +245,21 @@ public class MapUtils {
 
         // Create a new Position object and return it
         return new Position(newX, newY);
+    }
+
+    public static int getMaxElevation(Tile[][]map){
+        int max = 0;
+
+        for(int x = 0; x<map.length; x++){
+            for(int y = 0; y<map[0].length;y++){
+                int elevation = map[x][y].getElevation();
+                if(elevation>max){
+                    max = elevation;
+                }
+            }
+        }
+
+        Log.d("MapMaxElevation", "elevation max: " + max);
+        return max;
     }
 }

@@ -17,8 +17,6 @@ public class MapGenerator {
     float scale = .1f;
     private final int maxElevation = 100;
     private final int minElevation = 0;
-    float waterFreq = 0;
-    float mountainFreq = 0;
 
     public Bitmap generateRandomMapBitmap(int mapWidth, int mapHeight, int tileSize, Tile[][] map) {
 
@@ -48,11 +46,11 @@ public class MapGenerator {
             for (int y = 0; y < mapHeight; y++) {
                 float noiseX = x * scale;
                 float noiseY = y * scale;
-                float noiseValue = perlinNoise.noise(noiseX, noiseY, .03f, mountainFreq) - (waterFreq - .3f);
+                float noiseValue = perlinNoise.noise(noiseX, noiseY, .03f, mountainFreq) - (waterFreq-.5f);
                 TerrainType terrainType = TerrainType.Companion.createFromValue(noiseValue);
 
                 // Calculate elevation
-                elevations[x][y] = ((noiseValue - WATER_THRESHOLD) * (maxElevation - minElevation));
+                elevations[x][y] = ((noiseValue) * (maxElevation - minElevation));
 
                 // Create and store the Tile object
                 map[x][y] = new Tile(terrainType, (int) elevations[x][y]);
