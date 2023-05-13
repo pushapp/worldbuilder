@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:layout_weight="1">
+
+    <com.worldbuilder.mapgame.ui.dialogs.AddAnimalNodeView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:id="@+id/plant_node"/>
+
+    <com.worldbuilder.mapgame.ui.dialogs.AddAnimalNodeView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:id="@+id/herbivore_node"/>
+
+    <com.worldbuilder.mapgame.ui.dialogs.AddAnimalNodeView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:id="@+id/carnivore_node"/>
+
+</LinearLayout>

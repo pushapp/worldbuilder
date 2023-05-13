@@ -24,6 +24,7 @@ import com.worldbuilder.mapgame.models.Position;
 import com.worldbuilder.mapgame.ui.dialogs.CreatePlantOrAnimalDialog;
 import com.worldbuilder.mapgame.ui.dialogs.CustomizeWorldDialog;
 import com.worldbuilder.mapgame.ui.dialogs.MapClickDialog;
+import com.worldbuilder.mapgame.ui.dialogs.SimpleAddLifeform;
 import com.worldbuilder.mapgame.utils.LifeformUtils;
 import com.worldbuilder.mapgame.viewmodels.GameViewModel;
 
@@ -36,7 +37,8 @@ import kotlin.Unit;
 
 public class MainActivity extends AppCompatActivity
         implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener,
-        CustomizeWorldDialog.CustomizeWorldDialogListener {
+        CustomizeWorldDialog.CustomizeWorldDialogListener,
+        SimpleAddLifeform.AddLifeformClickListener {
 
     private Tile[][] tilemap = null;
     private MapGenerator mapGenerator = new MapGenerator();
@@ -270,7 +272,7 @@ public class MainActivity extends AppCompatActivity
         binding.lifeFormContainer.setOnClickListener(view -> {
             MapClickDialog mapClickDialog = new MapClickDialog(
                     this,
-                    () -> showAddLifeformDialog(),
+                    () -> showSimpleAddLifeformDialog(),
                     () -> showLifefomListDialog()
             );
             mapClickDialog.showPopupWindow(mapClickDialogPlacement);
@@ -293,5 +295,51 @@ public class MainActivity extends AppCompatActivity
         //not created yet. shows a recyclerview with lifeforms in area to view specific lifeforms stats
 
         return Unit.INSTANCE;
+    }
+
+    private Unit showSimpleAddLifeformDialog() {
+        SimpleAddLifeform addLifeformDialog = new SimpleAddLifeform(this);
+        addLifeformDialog.setLifeformClickListener(this::onLifeformAdded);
+        addLifeformDialog.show();
+        return Unit.INSTANCE;
+    }
+    @Override
+    public void onLifeformAdded(int nodeId) {
+        List<Position> positions = MapUtils.generateSurroundingPositions(lastTouchedPosition, tilemap, false, 1, 3);
+
+        List<Position> selectedPositions = MapUtils.getRandomPositions(positions, 5);
+        lifeFormID++;
+        //generate 5 of the lifeforms
+        Log.d("NumOfGeneratedPositions", "Positions generated: " + positions.size());
+
+        if (positions.size() > 4) {
+            world.setDarwinPoints(world.getDarwinPoints() - 300);
+            int plantRes = getRandomPlantDrawable();
+            int animalRes = getRandomAnimalDrawable();
+            for (Position position1 : selectedPositions) {
+                switch (nodeId) {
+                    case SimpleAddLifeform.PLANT:
+                        Plant plant1 = new Plant("plant_" + lifeFormID, .5f, 50, position1, 10, 5, plantRes, 30, lifeFormID);
+                        addLifeformImageView(plant1);
+                        world.addLifeform(plant1);
+                        break;
+                    case SimpleAddLifeform.HERBIVORE:
+                        Animal animal = new Animal("animal_" + lifeFormID, 5, .5f, 50, position1, 10, animalRes, 30, lifeFormID);
+                        animal.setFoodType("Herbivore");
+                        addLifeformImageView(animal);
+                        world.addLifeform(animal);
+                        break;
+                    case SimpleAddLifeform.CARNIVORE:
+                        Animal carnivore = new Animal("animal_" + lifeFormID, 5, .5f, 50, position1, 10, animalRes, 30, lifeFormID);
+                        carnivore.setFoodType("Carnivore");
+                        addLifeformImageView(carnivore);
+                        world.addLifeform(carnivore);
+                        break;
+                }
+            }
+        }
+        //save Tilemap
+        SaveGame.saveTileArrayToFile(this, tilemap);
+        SaveGame.saveToSharedPrefs(this, world);
     }
 }
