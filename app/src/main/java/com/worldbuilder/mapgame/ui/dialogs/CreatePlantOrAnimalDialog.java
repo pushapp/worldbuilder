@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.SeekBar;
 
 import androidx.annotation.NonNull;
@@ -17,6 +18,7 @@ import com.worldbuilder.mapgame.Lifeforms;
 import com.worldbuilder.mapgame.R;
 import com.worldbuilder.mapgame.databinding.DialogAddLifeformBinding;
 import com.worldbuilder.mapgame.models.ItemCreationParams;
+import com.worldbuilder.mapgame.models.lifeforms.FoodType;
 import com.worldbuilder.mapgame.ui.OnItemSelectedSimpleListener;
 import com.worldbuilder.mapgame.ui.OnSeekBarSimpleChangeListener;
 
@@ -74,7 +76,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         binding.seedDistanceseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
-                if(!b) return;
+                if (!b) return;
                 params.seedDistCost = progress;
                 params.seedingDistanceProgress = progress;
 
@@ -87,7 +89,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         binding.speedSeek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
-                if(!b) return;
+                if (!b) return;
                 params.speedCost = progress * 4;
                 params.seedSpeedProgress = progress;
 
@@ -100,7 +102,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         binding.elevationHabitatseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
-                if(!b) return;
+                if (!b) return;
                 params.elevationProgress = progress;
                 //TODO: complete cost calculation
                 onCostsChanged();
@@ -111,7 +113,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         binding.lifespanseek.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
-                if(!b) return;
+                if (!b) return;
                 params.lifespanCost = progress;
                 params.lifeSpanProgress = progress;
 
@@ -128,7 +130,7 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         binding.plantdispersion.setOnSeekBarChangeListener(new OnSeekBarSimpleChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
-                if(!b) return;
+                if (!b) return;
                 params.propCost = progress * 2;
                 params.propagationRateProgress = progress;
 
@@ -141,16 +143,18 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
             }
         });
 
+        ArrayAdapter<FoodType> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, FoodType.values());
+        binding.foodTypeSpinner.setAdapter(adapter);
         //food type
         binding.foodTypeSpinner.setOnItemSelectedListener(new OnItemSelectedSimpleListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                params.selectedFoodType = binding.foodTypeSpinner.getSelectedItem().toString();
+                params.selectedFoodType = (FoodType) binding.foodTypeSpinner.getSelectedItem();
 
-                if (params.selectedFoodType.equals("Herbivore")) {
+                if (params.selectedFoodType == FoodType.Herbivore) {
                     params.foodCost = 1000;
                 }
-                if (params.selectedFoodType.equals("Carnivore")) {
+                if (params.selectedFoodType == FoodType.Carnivore) {
                     params.foodCost = 10000;
                 }
                 params.cost = params.foodCost + params.propCost + params.speedCost + params.lifespanCost;
