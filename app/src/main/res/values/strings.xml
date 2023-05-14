@@ -20,12 +20,4 @@
         <item>Plant</item>
         <item>Animal</item>
     </string-array>
-
-
-    <string-array name="food_types">
-        <item>Herbivore</item>
-        <item>Carnivore</item>
-        <item>Omnivore</item>
-    </string-array>
-
 </resources>

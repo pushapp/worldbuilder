@@ -1,6 +1,5 @@
 package com.worldbuilder.mapgame;
 
-import android.content.Context;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
@@ -9,6 +8,11 @@ import com.worldbuilder.mapgame.models.Position;
 
 import java.util.Locale;
 import java.io.Serializable;
+
+interface LifeformChangeListener {
+    void onLifeFormCreated(Lifeform lifeform);
+    void onLifeformRemoved(Lifeform lifeform);
+}
 
 public abstract class Lifeform implements Serializable {
 
@@ -36,7 +40,7 @@ public abstract class Lifeform implements Serializable {
         this.lifeFormID = lifeFormID;
     }
 
-    public abstract void update(Tile[][] map, World world, Context context);
+    public abstract void update(Tile[][] map, World world, LifeformChangeListener listener);
 
     //getters & setters
     public int getLifeFormID() {

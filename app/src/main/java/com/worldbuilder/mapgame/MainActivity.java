@@ -36,10 +36,11 @@ import kotlin.Unit;
 
 public class MainActivity extends AppCompatActivity
         implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener,
-        CustomizeWorldDialog.CustomizeWorldDialogListener {
+        CustomizeWorldDialog.CustomizeWorldDialogListener,
+        LifeformChangeListener {
 
     private Tile[][] tilemap = null;
-    private MapGenerator mapGenerator = new MapGenerator();
+    private final MapGenerator mapGenerator = new MapGenerator();
     private World world = null;
     private static final int width = 2000;
     private static final int height = 2000;
@@ -108,7 +109,7 @@ public class MainActivity extends AppCompatActivity
     private void incrementTime(int steps) {
         if (world == null) return;
 
-        world.update(steps, this);
+        world.update(steps);
         updateDarwinTV();
     }
 
@@ -133,7 +134,6 @@ public class MainActivity extends AppCompatActivity
         int propagationRate = (params.propagationRateProgress / 20) + 1;
         int elevationHabitat = (params.elevationProgress * MapUtils.getMaxElevation(tilemap))/100; //adjust elevation meter to the elevation of the map
         int seedingDist = (params.seedingDistanceProgress / 5) + 1;
-        String foodType = params.selectedFoodType;
         int speed = (params.seedSpeedProgress / 20) + 1;
         // Get values from other input fields
 
@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity
                     world.addLifeform(plant1);
                 } else {
                     Animal animal = new Animal("animal_" + lifeFormID, speed, .5f, lifespan, position1, propagationRate, animalRes, elevationHabitat, lifeFormID);
-                    animal.setFoodType(foodType);
+                    animal.setFoodType(params.selectedFoodType);
                     addLifeformImageView(animal);
                     world.addLifeform(animal);
                 }
@@ -173,6 +173,16 @@ public class MainActivity extends AppCompatActivity
         // ...
     }
 
+    public void onLifeFormCreated(Lifeform lifeform) {
+        ImageView newPlantImageView = LifeformUtils.INSTANCE.createLifeformImageView(lifeform, this);
+        binding.lifeFormContainer.addView(newPlantImageView);
+    }
+
+    @Override
+    public void onLifeformRemoved(Lifeform lifeform) {
+        binding.lifeFormContainer.removeView(lifeform.getImageView());
+    }
+
     @Override
     public void onCreateWorld(float waterFrequency, float mountainFrequency) {
         if (world != null) {
@@ -181,7 +191,7 @@ public class MainActivity extends AppCompatActivity
             binding.lifeFormContainer.removeAllViews();
         }
         viewModel.onCreateWorldStarted();
-        LoadWorldAsync loadWorldAsync = new LoadWorldAsync(this, width, height, waterFrequency, mountainFrequency, binding, mapGenerator);
+        LoadWorldAsync loadWorldAsync = new LoadWorldAsync(this, width, height, waterFrequency, mountainFrequency, this, mapGenerator);
         loadWorldAsync.setAsyncTaskCallback((world, tiles, bitmap) -> {
             this.world = world;
             tilemap = tiles;
@@ -194,7 +204,7 @@ public class MainActivity extends AppCompatActivity
     public void loadSavedGame(Bitmap bitmap, Tile[][] map) {
         setMapBitmap(bitmap);
 
-        world = new World(map, binding.lifeFormContainer);
+        world = new World(map, this);
         List<Animal> animals = SaveGame.loadAnimalsFromPrefs(this);
         for (Animal animal : animals) {
             Position pos = animal.getPosition();
