@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:id="@+id/layout_for_clicklistener"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:translationZ="100dp" />
+
+    <Button
+        android:id="@+id/resetButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:text="@string/new_world"
+        tools:ignore="RelativeOverlap" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/loading_anim"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:translationZ="40dp"
+        android:visibility="invisible"
+        app:lottie_autoPlay="true"
+        app:lottie_fileName="worldanimation.json"
+        app:lottie_loop="true" />
+
+    <TextView
+        android:id="@+id/dpoints"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/rounded_dialog"
+        android:textColor="@color/black"
+        android:textSize="20sp"
+        android:translationZ="20dp" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scrollbars="none">
+
+        <ScrollView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:scrollbars="none">
+
+            <RelativeLayout
+                android:id="@+id/lifeFormContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                tools:background="@tools:sample/backgrounds/scenic" />
+        </ScrollView>
+    </HorizontalScrollView>
+</RelativeLayout>
