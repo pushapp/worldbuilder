@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/introFragment">
+
+    <fragment
+        android:id="@+id/gameFragment"
+        android:name="com.worldbuilder.mapgame.ui.fragments.GameFragment"
+        android:label="fragment_game"
+        tools:layout="@layout/fragment_game">
+        <action
+            android:id="@+id/createNewWorld"
+            app:destination="@id/customizeWorldDialog" />
+    </fragment>
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.worldbuilder.mapgame.ui.fragments.SettingsFragment"
+        android:label="fragment_settings"
+        tools:layout="@layout/fragment_settings" />
+    <dialog
+        android:id="@+id/customizeWorldDialog"
+        android:name="com.worldbuilder.mapgame.ui.dialogs.CustomizeWorldDialog"
+        android:label="CustomizeWorldDialog" />
+    <fragment
+        android:id="@+id/introFragment"
+        android:name="com.worldbuilder.mapgame.ui.fragments.IntroFragment"
+        android:label="fragment_intro"
+        tools:layout="@layout/fragment_intro" >
+        <action
+            android:id="@+id/startGame"
+            app:destination="@id/gameFragment"
+            app:popUpTo="@id/introFragment"
+            app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/openSettings"
+            app:destination="@id/settingsFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+</navigation>
