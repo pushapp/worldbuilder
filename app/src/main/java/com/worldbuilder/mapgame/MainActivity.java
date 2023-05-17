@@ -21,6 +21,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.worldbuilder.mapgame.databinding.ActivityMainBinding;
 import com.worldbuilder.mapgame.models.ItemCreationParams;
 import com.worldbuilder.mapgame.models.Position;
+import com.worldbuilder.mapgame.models.lifeform.LifeformChangeListener;
 import com.worldbuilder.mapgame.ui.dialogs.CreatePlantOrAnimalDialog;
 import com.worldbuilder.mapgame.ui.dialogs.CustomizeWorldDialog;
 import com.worldbuilder.mapgame.ui.dialogs.MapClickDialog;
@@ -38,7 +39,8 @@ import kotlin.Unit;
 public class MainActivity extends AppCompatActivity
         implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener,
         CustomizeWorldDialog.CustomizeWorldDialogListener,
-        SimpleAddLifeform.AddLifeformClickListener {
+        SimpleAddLifeform.AddLifeformClickListener,
+        LifeformChangeListener {
 
     private Tile[][] tilemap = null;
     private MapGenerator mapGenerator = new MapGenerator();
@@ -110,7 +112,7 @@ public class MainActivity extends AppCompatActivity
     private void incrementTime(int steps) {
         if (world == null) return;
 
-        world.update(steps, this);
+        world.update(steps);
         updateDarwinTV();
     }
 
@@ -133,14 +135,14 @@ public class MainActivity extends AppCompatActivity
 
         int lifespan = params.lifeSpanProgress;
         int propagationRate = (params.propagationRateProgress / 20) + 1;
-        int elevationHabitat = (params.elevationProgress * MapUtils.getMaxElevation(tilemap))/100; //adjust elevation meter to the elevation of the map
+        int elevationHabitat = (params.elevationProgress * MapUtils.getMaxElevation(tilemap)) / 100; //adjust elevation meter to the elevation of the map
         int seedingDist = (params.seedingDistanceProgress / 5) + 1;
         String foodType = params.selectedFoodType;
         int speed = (params.seedSpeedProgress / 20) + 1;
         // Get values from other input fields
 
 
-        Log.d("LifeformStats","elevation: " + elevationHabitat + " propagation: " + propagationRate + " speed: " + speed + " seedingDist: " + seedingDist + " lifespan: " + lifespan);
+        Log.d("LifeformStats", "elevation: " + elevationHabitat + " propagation: " + propagationRate + " speed: " + speed + " seedingDist: " + seedingDist + " lifespan: " + lifespan);
 
         List<Position> positions = MapUtils.generateSurroundingPositions(lastTouchedPosition, tilemap, false, 1, 3);
 
@@ -183,7 +185,7 @@ public class MainActivity extends AppCompatActivity
             binding.lifeFormContainer.removeAllViews();
         }
         viewModel.onCreateWorldStarted();
-        LoadWorldAsync loadWorldAsync = new LoadWorldAsync(this, width, height, waterFrequency, mountainFrequency, binding, mapGenerator);
+        LoadWorldAsync loadWorldAsync = new LoadWorldAsync(this, width, height, waterFrequency, mountainFrequency, this, mapGenerator);
         loadWorldAsync.setAsyncTaskCallback((world, tiles, bitmap) -> {
             this.world = world;
             tilemap = tiles;
@@ -196,7 +198,7 @@ public class MainActivity extends AppCompatActivity
     public void loadSavedGame(Bitmap bitmap, Tile[][] map) {
         setMapBitmap(bitmap);
 
-        world = new World(map, binding.lifeFormContainer);
+        world = new World(map, this);
         List<Animal> animals = SaveGame.loadAnimalsFromPrefs(this);
         for (Animal animal : animals) {
             Position pos = animal.getPosition();
@@ -303,6 +305,7 @@ public class MainActivity extends AppCompatActivity
         addLifeformDialog.show();
         return Unit.INSTANCE;
     }
+
     @Override
     public void onLifeformAdded(int nodeId) {
         List<Position> positions = MapUtils.generateSurroundingPositions(lastTouchedPosition, tilemap, false, 1, 3);
@@ -341,5 +344,16 @@ public class MainActivity extends AppCompatActivity
         //save Tilemap
         SaveGame.saveTileArrayToFile(this, tilemap);
         SaveGame.saveToSharedPrefs(this, world);
+    }
+
+    @Override
+    public void onLifeFormCreated(Lifeform lifeform) {
+        ImageView newPlantImageView = LifeformUtils.INSTANCE.createLifeformImageView(lifeform, this);
+        binding.lifeFormContainer.addView(newPlantImageView);
+    }
+
+    @Override
+    public void onLifeformRemoved(Lifeform lifeform) {
+        binding.lifeFormContainer.removeView(lifeform.getImageView());
     }
 }
