@@ -1,13 +1,11 @@
 package com.worldbuilder.mapgame;
 
-import android.content.Context;
 import android.util.Log;
-import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import com.worldbuilder.mapgame.models.Position;
+import com.worldbuilder.mapgame.models.lifeform.LifeformChangeListener;
 import com.worldbuilder.mapgame.models.map.TerrainType;
-import com.worldbuilder.mapgame.utils.LifeformUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +29,7 @@ public class Animal extends Lifeform {
     }
 
     @Override
-    public void update(Tile[][] map, World world, Context context) {
+    public void update(Tile[][] map, World world, LifeformChangeListener listener) {
         // Implement animal-specific behavior, like movement or hunting
         move(map);
 
@@ -39,12 +37,12 @@ public class Animal extends Lifeform {
             world.setDarwinPoints(world.getDarwinPoints() + 10);
             incrementAge();
             if (energy > 40) {
-                procreate(map, world, context);
+                procreate(map, world, listener);
             }
             energy -= 2;
 
             // Check for nearby plants and consume them
-            eat(map, world);
+            eat(world);
 
             // Check if energy has dropped below a threshold
             if (energy <= 0) {
@@ -84,7 +82,7 @@ public class Animal extends Lifeform {
     // Animal-specific methods, if any
     // ...
 
-    public void procreate(Tile[][] map, World world, Context context) {
+    public void procreate(Tile[][] map, World world, LifeformChangeListener listener) {
         ArrayList<Animal> temp = new ArrayList<>(world.getAnimals());
         for (Animal animal : temp) {
             if (MapUtils.arePositionsClose(animal.getPosition(), getPosition(), 1)) {
@@ -104,10 +102,7 @@ public class Animal extends Lifeform {
 
                         if (newPos != null) {
                             Animal newAnimal = new Animal(name, speed, camouflage, lifespan, newPos, propagationRate, imgID, habitat, getLifeFormID());
-                            ImageView newAnimalImageView = LifeformUtils.INSTANCE.createLifeformImageView(newAnimal, context);
-
-                            world.addLifeform(newAnimal);
-                            world.getMapView().addView(newAnimalImageView); // Add the ImageView to the layout
+                            listener.onLifeFormCreated(newAnimal);
                             map[newPos.getX()][newPos.getY()].setInHabitant(animal); //set the animal on the Tile in the map[][] array
                         }
                     }
@@ -225,7 +220,7 @@ public class Animal extends Lifeform {
 
     }
 
-    public void eat(Tile[][] map, World world) {
+    public void eat(World world) {
 
         List<Lifeform> nearbyEdibles = new ArrayList<>();
         if (foodType.equals("Herbivore")) {

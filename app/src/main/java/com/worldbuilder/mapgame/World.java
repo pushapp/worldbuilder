@@ -1,31 +1,28 @@
 package com.worldbuilder.mapgame;
 
-import android.content.Context;
 import android.util.Log;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
 
 import com.worldbuilder.mapgame.models.Position;
+import com.worldbuilder.mapgame.models.lifeform.LifeformChangeListener;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class World {
+public class World implements LifeformChangeListener {
     private final static String TAG = World.class.getSimpleName();
 
     private final Tile[][] map;
     private List<Plant> plants;
     private List<Animal> animals;
     private int darwinPoints = 1000;
-    //TODO: remove Context related things from this "controller"
-    private final RelativeLayout mapView;
+    private final LifeformChangeListener listener;
 
-    public World(Tile[][] map, RelativeLayout mapView) {
+    public World(Tile[][] map, LifeformChangeListener listener) {
         this.map = map;
         this.plants = new ArrayList<>();
         this.animals = new ArrayList<>();
-        this.mapView = mapView;
+        this.listener = listener;
     }
 
     public List<Plant> getPlants() {
@@ -52,16 +49,11 @@ public class World {
         this.animals = animals;
     }
 
-    public RelativeLayout getMapView() {
-        return mapView;
-    }
-
-    //TODO: remove context (and mapView) asap!
-    public synchronized void update(int steps, Context context) {
+    public synchronized void update(int steps) {
         Log.d(TAG, "incrementTime");
         for (int step = 0; step < steps; step++) {
-            new ArrayList<>(plants).forEach(plant -> plant.update(map, this, context));
-            new ArrayList<>(animals).forEach(animal -> animal.update(map, this, context));
+            new ArrayList<>(plants).forEach(plant -> plant.update(map, this, this));
+            new ArrayList<>(animals).forEach(animal -> animal.update(map, this, this));
             // Remove dead lifeforms (age >= lifespan) from the lists
             removeDead();
         }
@@ -82,7 +74,7 @@ public class World {
         while (plantIterator.hasNext()) {
             Plant plant = plantIterator.next();
             if (plant.getAge() >= plant.getLifespan()) {
-                removeViewFromMap(plant.getImageView());
+                onLifeformRemoved(plant);
                 plantIterator.remove();
                 map[plant.getPosition().getX()][plant.getPosition().getY()].setInHabitant(null);
             }
@@ -92,7 +84,7 @@ public class World {
         while (animalIterator.hasNext()) {
             Animal animal = animalIterator.next();
             if (animal.getAge() >= animal.getLifespan()) {
-                removeViewFromMap(animal.getImageView());
+                onLifeformRemoved(animal);
                 animalIterator.remove();
                 map[animal.getPosition().getX()][animal.getPosition().getY()].setInHabitant(null);
             }
@@ -131,13 +123,18 @@ public class World {
             animals.remove(lifeform);
         }
 
-        removeViewFromMap(lifeform.getImageView());
+        onLifeformRemoved(lifeform);
         map[lifeform.getPosition().getX()][lifeform.getPosition().getY()].setInHabitant(null);
     }
 
-    private void removeViewFromMap(ImageView imageView) {
-        if (imageView != null) {
-            mapView.removeView(imageView);
-        }
+    @Override
+    public void onLifeFormCreated(Lifeform lifeform) {
+        addLifeform(lifeform);
+        listener.onLifeFormCreated(lifeform);
+    }
+
+    @Override
+    public void onLifeformRemoved(Lifeform lifeform) {
+        listener.onLifeformRemoved(lifeform);
     }
 }
