@@ -15,13 +15,14 @@ import android.widget.ImageView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.worldbuilder.mapgame.databinding.ActivityMainBinding;
 import com.worldbuilder.mapgame.models.ItemCreationParams;
 import com.worldbuilder.mapgame.models.Position;
 import com.worldbuilder.mapgame.models.lifeform.LifeformChangeListener;
+import com.worldbuilder.mapgame.repositories.LocalSessionRepository;
+import com.worldbuilder.mapgame.repositories.SessionRepository;
 import com.worldbuilder.mapgame.ui.dialogs.CreatePlantOrAnimalDialog;
 import com.worldbuilder.mapgame.ui.dialogs.CustomizeWorldDialog;
 import com.worldbuilder.mapgame.ui.dialogs.MapClickDialog;
@@ -76,7 +77,9 @@ public class MainActivity extends AppCompatActivity
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        viewModel = new ViewModelProvider(this).get(GameViewModel.class);
+        SessionRepository repo = new LocalSessionRepository(getApplicationContext());
+        viewModel = new GameViewModel(repo);
+
         viewModel.getTime().observe(this, updateTickerObserver);
         viewModel.getLoading().observe(this, isLoadingObserver);
 
@@ -185,7 +188,7 @@ public class MainActivity extends AppCompatActivity
             binding.lifeFormContainer.removeAllViews();
         }
         viewModel.onCreateWorldStarted();
-        LoadWorldAsync loadWorldAsync = new LoadWorldAsync(this, width, height, waterFrequency, mountainFrequency, this, mapGenerator);
+        LoadWorldAsync loadWorldAsync = new LoadWorldAsync(this, width, height, waterFrequency, mountainFrequency, mapGenerator);
         loadWorldAsync.setAsyncTaskCallback((world, tiles, bitmap) -> {
             this.world = world;
             tilemap = tiles;
@@ -198,7 +201,9 @@ public class MainActivity extends AppCompatActivity
     public void loadSavedGame(Bitmap bitmap, Tile[][] map) {
         setMapBitmap(bitmap);
 
-        world = new World(map, this);
+        world = new World(map);
+        world.setLifeformChangeListener(this);
+
         List<Animal> animals = SaveGame.loadAnimalsFromPrefs(this);
         for (Animal animal : animals) {
             Position pos = animal.getPosition();
@@ -274,8 +279,8 @@ public class MainActivity extends AppCompatActivity
         binding.lifeFormContainer.setOnClickListener(view -> {
             MapClickDialog mapClickDialog = new MapClickDialog(
                     this,
-                    () -> showSimpleAddLifeformDialog(),
-                    () -> showLifefomListDialog()
+                    this::showSimpleAddLifeformDialog,
+                    this::showLifefomListDialog
             );
             mapClickDialog.showPopupWindow(mapClickDialogPlacement);
 
@@ -354,6 +359,8 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onLifeformRemoved(Lifeform lifeform) {
-        binding.lifeFormContainer.removeView(lifeform.getImageView());
+        if(lifeform !=  null && lifeform.getImageView() != null) {
+            binding.lifeFormContainer.removeView(lifeform.getImageView());
+        }
     }
 }

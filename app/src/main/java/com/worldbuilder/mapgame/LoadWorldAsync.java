@@ -4,8 +4,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 
-import com.worldbuilder.mapgame.models.lifeform.LifeformChangeListener;
-
 public class LoadWorldAsync extends AsyncTask<Void, Void, Void> {
 
     private int width;
@@ -17,19 +15,17 @@ public class LoadWorldAsync extends AsyncTask<Void, Void, Void> {
     private AsyncTaskCallback asyncTaskCallback;
 
     private MapGenerator mapGenerator;
-    private final LifeformChangeListener listener;
     private World world;
     private Tile[][] map;
     private Bitmap bm;
 
     public LoadWorldAsync(Context context, int width, int height, float waterFrequency,
-                          float mountainFrequency, LifeformChangeListener listener, MapGenerator mapGenerator) {
+                          float mountainFrequency, MapGenerator mapGenerator) {
         this.height = height;
         this.width = width;
         this.context = context;
         this.waterFreq = waterFrequency;
         this.mountainFreq = mountainFrequency;
-        this.listener = listener;
         this.mapGenerator = mapGenerator;
     }
 
@@ -42,9 +38,7 @@ public class LoadWorldAsync extends AsyncTask<Void, Void, Void> {
 
         map = MapUtils.reduceTileArray(map, MapUtils.tileMapDivisor);
 
-        world = new World(map, listener);
-
-
+        world = new World(map);
         return null;
     }
 
