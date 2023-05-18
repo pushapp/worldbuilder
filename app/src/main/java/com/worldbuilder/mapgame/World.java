@@ -16,12 +16,15 @@ public class World implements LifeformChangeListener {
     private List<Plant> plants;
     private List<Animal> animals;
     private int darwinPoints = 1000;
-    private final LifeformChangeListener listener;
+    private LifeformChangeListener listener;
 
-    public World(Tile[][] map, LifeformChangeListener listener) {
+    public World(Tile[][] map) {
         this.map = map;
         this.plants = new ArrayList<>();
         this.animals = new ArrayList<>();
+    }
+
+    public void setLifeformChangeListener(LifeformChangeListener listener) {
         this.listener = listener;
     }
 

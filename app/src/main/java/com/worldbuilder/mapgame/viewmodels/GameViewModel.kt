@@ -1,6 +1,5 @@
 package com.worldbuilder.mapgame.viewmodels
 
-import android.content.Context
 import android.graphics.Bitmap
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -9,12 +8,11 @@ import androidx.lifecycle.viewModelScope
 import com.hadilq.liveevent.LiveEvent
 import com.worldbuilder.mapgame.Lifeform
 import com.worldbuilder.mapgame.MapGenerator
-import com.worldbuilder.mapgame.SaveGame
 import com.worldbuilder.mapgame.Tile
 import com.worldbuilder.mapgame.World
 import com.worldbuilder.mapgame.models.ExecutionResult
 import com.worldbuilder.mapgame.models.lifeform.LifeformChangeListener
-import kotlinx.coroutines.Dispatchers
+import com.worldbuilder.mapgame.repositories.SessionRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -22,15 +20,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.FileNotFoundException
-import kotlin.Exception
-import kotlin.NullPointerException
 
-class GameViewModel : ViewModel() {
+class GameViewModel(private val repo: SessionRepository) : ViewModel() {
 
     private val mapGenerator = MapGenerator()
-    private var world: World? = null
     private var tilemap: Array<Array<Tile>>? = null
     private val lifeFormID = 1
 
@@ -49,6 +42,9 @@ class GameViewModel : ViewModel() {
 
     private val _bitmap = MutableLiveData<Bitmap>()
     val bitmap: LiveData<Bitmap> = _bitmap
+
+    private var _world = MutableLiveData<World>()
+    val world: LiveData<World> = _world
 
     val errorMessage = LiveEvent<String>()
 
@@ -97,26 +93,27 @@ class GameViewModel : ViewModel() {
         startTimer()
     }
 
-    fun load(context: Context) {
+    @Suppress("UNNECESSARY_NOT_NULL_ASSERTION")
+    fun load() {
         viewModelScope.launch {
             onCreateWorldStarted()
 
-            when (val result = loadTiles(context)) {
+            when (val result = repo.loadTiles()) {
                 is ExecutionResult.Success -> tilemap = result.data
                 is ExecutionResult.Error -> handleError(result)
             }
             tilemap?.let {
-                @Suppress("UNNECESSARY_NOT_NULL_ASSERTION")
-                when(val result = loadWorldBitmap(context)) {
+                when (val result = repo.loadWorldBitmap()) {
                     is ExecutionResult.Success -> _bitmap.value = result.data!!
                     is ExecutionResult.Error -> handleError(result)
                 }
                 //mimic some work
                 delay(1000)
 
-                //TODO: move to repository
-                loadSavedGame(context, tilemap!!)
-                //throw Exception("some error happened")
+                when (val result = repo.loadSavedGame(it)) {
+                    is ExecutionResult.Success -> _world.value = result.data!!
+                    is ExecutionResult.Error -> handleError(result)
+                }
                 onCreateWorldFinished()
             }
         }
@@ -125,69 +122,5 @@ class GameViewModel : ViewModel() {
     private fun handleError(result: ExecutionResult.Error) {
         errorMessage.value = result.throwable.localizedMessage
         _loading.value = false
-    }
-
-    //TODO: move to repository
-    private suspend fun loadTiles(context: Context): ExecutionResult<Array<Array<Tile>>> {
-        return withContext(Dispatchers.IO) {
-            try {
-                SaveGame.loadTileArrayFromFile(context)?.let { tiles ->
-                    ExecutionResult.Success(tiles)
-                } ?: run {
-                    ExecutionResult.Error(NullPointerException("no tiles found"))
-                }
-            } catch (e: Exception) {
-                ExecutionResult.Error(NullPointerException("no tiles found"))
-            }
-        }
-    }
-
-    //TODO: move to repository
-    private suspend fun loadWorldBitmap(context: Context): ExecutionResult<Bitmap> {
-        return withContext(Dispatchers.IO) {
-            try {
-                SaveGame.loadBitmapFromInternalStorage(context, SaveGame.BITMAPFILE)
-                    ?.let { bitmap ->
-                        ExecutionResult.Success(bitmap)
-                    } ?: run {
-                    ExecutionResult.Error(FileNotFoundException("Can not find map file"))
-                }
-            } catch (e: Exception) {
-                ExecutionResult.Error(e)
-            }
-        }
-    }
-
-    //TODO: move to repository
-    private fun loadSavedGame(context: Context, map: Array<Array<Tile>>) {
-        World(map, lifeformChangeListener).also {
-            val animals = SaveGame.loadAnimalsFromPrefs(context)
-            for (animal in animals) {
-                val pos = animal.position
-                map[pos.x][pos.y].inHabitant = animal
-                //addLifeformImageView(animal)
-            }
-            val plants = SaveGame.loadPlantsFromPrefs(context)
-            for (plant in plants) {
-                val pos = plant.position
-                map[pos.x][pos.y].inHabitant = plant
-                //addLifeformImageView(plant)
-            }
-
-            it.darwinPoints = SaveGame.loadDarwinFromPrefs(context)
-            it.animals = animals
-            it.plants = plants
-
-            for (x in map.indices) {
-                for (y in map[0].indices) {
-                    if (map[x][y].inHabitant != null) {
-                        val lf = map[x][y].inHabitant
-                        it.addLifeform(lf)
-//                    addLifeformImageView(lf)
-                    }
-                }
-            }
-            world = it
-        }
     }
 }

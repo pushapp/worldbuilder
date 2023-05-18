@@ -14,13 +14,16 @@ import com.worldbuilder.mapgame.R
 import com.worldbuilder.mapgame.databinding.FragmentGameBinding
 import com.worldbuilder.mapgame.extensions.showSnackbar
 import com.worldbuilder.mapgame.extensions.viewModelFactory
+import com.worldbuilder.mapgame.repositories.LocalSessionRepository
+import com.worldbuilder.mapgame.repositories.SessionRepository
+import com.worldbuilder.mapgame.utils.LifeformUtils.createLifeformImageView
 import com.worldbuilder.mapgame.viewmodels.GameViewModel
 
 class GameFragment : Fragment() {
     private lateinit var binding: FragmentGameBinding
     private val viewModel: GameViewModel by viewModels(factoryProducer = viewModelFactory {
-        //TODO: add repository assigning here
-        GameViewModel()
+        val repo: SessionRepository = LocalSessionRepository(requireContext().applicationContext)
+        GameViewModel(repo)
     })
 
     override fun onCreateView(
@@ -39,7 +42,7 @@ class GameFragment : Fragment() {
 
         bindUI()
 
-        viewModel.load(requireContext())
+        viewModel.load()
     }
 
     private fun bindUI() {
@@ -63,6 +66,20 @@ class GameFragment : Fragment() {
             val lp: FrameLayout.LayoutParams = FrameLayout.LayoutParams(it.width, it.height)
             binding.lifeFormContainer.layoutParams = lp
             binding.lifeFormContainer.background = map
+        }
+
+        viewModel.world.observe(viewLifecycleOwner) { world ->
+            //add plant views
+            world.plants
+                .map { p -> createLifeformImageView(p, requireContext()) }
+                .forEach { imageView ->
+                    binding.lifeFormContainer.addView(imageView)
+                }
+            //add animal views
+            world.animals.map { a -> createLifeformImageView(a, requireContext()) }
+                .forEach { imageView ->
+                    binding.lifeFormContainer.addView(imageView)
+                }
         }
     }
 }
