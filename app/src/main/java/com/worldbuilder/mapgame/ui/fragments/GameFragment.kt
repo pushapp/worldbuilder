@@ -7,19 +7,23 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.RelativeLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import com.worldbuilder.mapgame.Lifeform
 import com.worldbuilder.mapgame.R
 import com.worldbuilder.mapgame.databinding.FragmentGameBinding
 import com.worldbuilder.mapgame.extensions.showSnackbar
 import com.worldbuilder.mapgame.extensions.viewModelFactory
+import com.worldbuilder.mapgame.models.Position
+import com.worldbuilder.mapgame.models.lifeform.LifeformChangeListener
 import com.worldbuilder.mapgame.repositories.LocalSessionRepository
 import com.worldbuilder.mapgame.repositories.SessionRepository
 import com.worldbuilder.mapgame.utils.LifeformUtils.createLifeformImageView
 import com.worldbuilder.mapgame.viewmodels.GameViewModel
 
-class GameFragment : Fragment() {
+class GameFragment : Fragment(), LifeformChangeListener {
     private lateinit var binding: FragmentGameBinding
     private val viewModel: GameViewModel by viewModels(factoryProducer = viewModelFactory {
         val repo: SessionRepository = LocalSessionRepository(requireContext().applicationContext)
@@ -45,6 +49,37 @@ class GameFragment : Fragment() {
         viewModel.load()
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.setLifeformChangeListener(this)
+        viewModel.startTimer()
+    }
+
+    override fun onPause() {
+        viewModel.setLifeformChangeListener(null)
+        viewModel.stopTimer()
+        super.onPause()
+
+    }
+
+    override fun onLifeFormCreated(lifeform: Lifeform) {
+        val image = createLifeformImageView(lifeform, requireContext())
+        binding.lifeFormContainer.addView(image)
+    }
+
+    override fun onLifeformRemoved(lifeform: Lifeform) {
+        lifeform.imageView?.let {
+            binding.lifeFormContainer.removeView(it)
+        }
+    }
+
+    override fun onLifeformMoved(lifeform: Lifeform, newPosition: Position) {
+        (lifeform.imageView.layoutParams as? RelativeLayout.LayoutParams)?.apply {
+            leftMargin = newPosition.x
+            topMargin = newPosition.y
+        }
+    }
+
     private fun bindUI() {
         viewModel.errorMessage.observe(viewLifecycleOwner) {
             showSnackbar(it)
@@ -59,6 +94,12 @@ class GameFragment : Fragment() {
             binding.lifeFormContainer.setIsVisible(!it)
         }
 
+        //bind darwin points
+        viewModel.darwinPoints.observe(viewLifecycleOwner) {
+            val darwinPointsString = getString(R.string.darwin_points, it)
+            binding.dpoints.text = darwinPointsString
+        }
+
         //bind map
         viewModel.bitmap.observe(viewLifecycleOwner) {
             val map: Drawable = BitmapDrawable(resources, it)
@@ -67,8 +108,12 @@ class GameFragment : Fragment() {
             binding.lifeFormContainer.layoutParams = lp
             binding.lifeFormContainer.background = map
         }
-
+        //bind world
         viewModel.world.observe(viewLifecycleOwner) { world ->
+            //remove all old views
+            //TODO: rework lifeFormContainer to pure canvas
+            binding.lifeFormContainer.removeAllViews()
+
             //add plant views
             world.plants
                 .map { p -> createLifeformImageView(p, requireContext()) }
