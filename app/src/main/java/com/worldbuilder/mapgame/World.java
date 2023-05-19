@@ -2,6 +2,8 @@ package com.worldbuilder.mapgame;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import com.worldbuilder.mapgame.models.Position;
 import com.worldbuilder.mapgame.models.lifeform.LifeformChangeListener;
 
@@ -131,13 +133,18 @@ public class World implements LifeformChangeListener {
     }
 
     @Override
-    public void onLifeFormCreated(Lifeform lifeform) {
+    public void onLifeFormCreated(@NonNull Lifeform lifeform) {
         addLifeform(lifeform);
         listener.onLifeFormCreated(lifeform);
     }
 
     @Override
-    public void onLifeformRemoved(Lifeform lifeform) {
+    public void onLifeformRemoved(@NonNull Lifeform lifeform) {
         listener.onLifeformRemoved(lifeform);
+    }
+
+    @Override
+    public void onLifeformMoved(@NonNull Lifeform lifeform, @NonNull Position newPosition) {
+        listener.onLifeformMoved(lifeform, newPosition);
     }
 }

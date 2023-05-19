@@ -1,7 +1,6 @@
 package com.worldbuilder.mapgame;
 
 import android.util.Log;
-import android.widget.RelativeLayout;
 
 import com.worldbuilder.mapgame.models.Position;
 import com.worldbuilder.mapgame.models.lifeform.LifeformChangeListener;
@@ -31,7 +30,7 @@ public class Animal extends Lifeform {
     @Override
     public void update(Tile[][] map, World world, LifeformChangeListener listener) {
         // Implement animal-specific behavior, like movement or hunting
-        move(map);
+        move(map, listener);
 
         if (propCounter == MapUtils.resolution) {
             world.setDarwinPoints(world.getDarwinPoints() + 10);
@@ -111,7 +110,7 @@ public class Animal extends Lifeform {
         }
     }
 
-    public void move(Tile[][] map) {
+    public void move(Tile[][] map, LifeformChangeListener listener) {
         if (targetSquare == null) {
 
             // Get the current position
@@ -202,10 +201,8 @@ public class Animal extends Lifeform {
             int newY = MapUtils.TiletoPixelY(getPosition().getY()) + movementY;
 
             // Update the ImageView position
-            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getImageView().getLayoutParams();
-            layoutParams.leftMargin = newX;
-            layoutParams.topMargin = newY;
-            getImageView().setLayoutParams(layoutParams);
+            Position newPosition = new Position(newX, newY);
+            listener.onLifeformMoved(this, newPosition);
 
             if (propCounter == MapUtils.resolution) {
                 map[getPosition().getX()][getPosition().getY()].setInHabitant(null);

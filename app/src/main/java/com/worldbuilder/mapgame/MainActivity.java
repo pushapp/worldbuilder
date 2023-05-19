@@ -12,7 +12,9 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
 
@@ -352,15 +354,28 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onLifeFormCreated(Lifeform lifeform) {
+    public void onLifeFormCreated(@NonNull Lifeform lifeform) {
         ImageView newPlantImageView = LifeformUtils.INSTANCE.createLifeformImageView(lifeform, this);
         binding.lifeFormContainer.addView(newPlantImageView);
     }
 
     @Override
-    public void onLifeformRemoved(Lifeform lifeform) {
-        if(lifeform !=  null && lifeform.getImageView() != null) {
+    public void onLifeformRemoved(@NonNull Lifeform lifeform) {
+        if (lifeform.getImageView() != null) {
             binding.lifeFormContainer.removeView(lifeform.getImageView());
+        }
+    }
+
+    @Override
+    public void onLifeformMoved(@NonNull Lifeform lifeform, @NonNull Position newPosition) {
+        ImageView imageView = lifeform.getImageView();
+        if (imageView != null) {
+            RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) imageView.getLayoutParams();
+
+            lp.leftMargin = newPosition.getX();
+            lp.topMargin = newPosition.getY();
+
+            imageView.setLayoutParams(lp);
         }
     }
 }

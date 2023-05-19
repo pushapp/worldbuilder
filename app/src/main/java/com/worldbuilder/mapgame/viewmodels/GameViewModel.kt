@@ -6,7 +6,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hadilq.liveevent.LiveEvent
-import com.worldbuilder.mapgame.Lifeform
 import com.worldbuilder.mapgame.MapGenerator
 import com.worldbuilder.mapgame.Tile
 import com.worldbuilder.mapgame.World
@@ -27,9 +26,10 @@ class GameViewModel(private val repo: SessionRepository) : ViewModel() {
     private var tilemap: Array<Array<Tile>>? = null
     private val lifeFormID = 1
 
-    private val lifeformChangeListener: LifeformChangeListener
+    private var lifeformChangeListener: LifeformChangeListener? = null
 
     private val refreshIntervalMs = 1000L // 1 second
+    private val stepsPerUpdate = 1
 
     private var timerJob: Job? = null
 
@@ -43,8 +43,11 @@ class GameViewModel(private val repo: SessionRepository) : ViewModel() {
     private val _bitmap = MutableLiveData<Bitmap>()
     val bitmap: LiveData<Bitmap> = _bitmap
 
-    private var _world = MutableLiveData<World>()
+    private val _world = MutableLiveData<World>()
     val world: LiveData<World> = _world
+
+    private val _darwinPoints = MutableLiveData(0)
+    val darwinPoints: LiveData<Int> = _darwinPoints
 
     val errorMessage = LiveEvent<String>()
 
@@ -57,30 +60,27 @@ class GameViewModel(private val repo: SessionRepository) : ViewModel() {
         }
     }
 
-    init {
-        lifeformChangeListener = object : LifeformChangeListener {
-            override fun onLifeFormCreated(lifeform: Lifeform?) {
-                //TODO: complete
-            }
-
-            override fun onLifeformRemoved(lifeform: Lifeform?) {
-                //TODO: complete
-            }
-
-        }
-    }
-
     //timer section
     fun startTimer() {
         timerJob = viewModelScope.launch {
             ticker.collectLatest {
+                if (timerJob?.isActive == false) return@collectLatest
+
                 _time.postValue(it)
+                _world.value?.let { w ->
+                    w.update(stepsPerUpdate)
+                    _darwinPoints.value = w.darwinPoints
+                }
             }
         }
     }
 
     fun stopTimer() {
         timerJob?.cancel("Timer has been stopped")
+    }
+
+    fun setLifeformChangeListener(listener: LifeformChangeListener?) {
+        lifeformChangeListener = listener
     }
 
     fun onCreateWorldStarted() {
@@ -93,7 +93,6 @@ class GameViewModel(private val repo: SessionRepository) : ViewModel() {
         startTimer()
     }
 
-    @Suppress("UNNECESSARY_NOT_NULL_ASSERTION")
     fun load() {
         viewModelScope.launch {
             onCreateWorldStarted()
@@ -107,11 +106,15 @@ class GameViewModel(private val repo: SessionRepository) : ViewModel() {
                     is ExecutionResult.Success -> _bitmap.value = result.data!!
                     is ExecutionResult.Error -> handleError(result)
                 }
-                //mimic some work
-                delay(1000)
 
                 when (val result = repo.loadSavedGame(it)) {
-                    is ExecutionResult.Success -> _world.value = result.data!!
+                    is ExecutionResult.Success -> {
+                        result.data.let { w ->
+                            w.setLifeformChangeListener(lifeformChangeListener)
+                            _world.value = w
+                        }
+                    }
+
                     is ExecutionResult.Error -> handleError(result)
                 }
                 onCreateWorldFinished()

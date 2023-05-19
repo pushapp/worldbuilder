@@ -20,7 +20,6 @@ public class Plant extends Lifeform {
     @Override
     public void update(Tile[][] map, World world, LifeformChangeListener listener) {
         // Implement plant-specific behavior, like growth or spreading
-        Log.d("Debug", "update Called");
         if (propCounter == MapUtils.resolution) {
             world.setDarwinPoints(world.getDarwinPoints() + 1);
             incrementAge();
