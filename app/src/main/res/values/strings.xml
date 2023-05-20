@@ -18,17 +18,11 @@
     <string name="setting">Settings</string>
     <string name="start_new_game">start new game</string>
     <string name="darwin_points">$%1$d Darwin</string>
+    <string name="life_form">lifeform</string>
 
     <string-array name="lifeform_types">
         <item>Plant</item>
         <item>Animal</item>
-    </string-array>
-
-
-    <string-array name="food_types">
-        <item>Herbivore</item>
-        <item>Carnivore</item>
-        <item>Omnivore</item>
     </string-array>
 
 </resources>

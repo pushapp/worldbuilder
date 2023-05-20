@@ -6,11 +6,17 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hadilq.liveevent.LiveEvent
+import com.worldbuilder.mapgame.Animal
+import com.worldbuilder.mapgame.Lifeforms
 import com.worldbuilder.mapgame.MapGenerator
+import com.worldbuilder.mapgame.Plant
 import com.worldbuilder.mapgame.Tile
 import com.worldbuilder.mapgame.World
+import com.worldbuilder.mapgame.models.CreateWorldParams
 import com.worldbuilder.mapgame.models.ExecutionResult
+import com.worldbuilder.mapgame.models.Position
 import com.worldbuilder.mapgame.models.lifeform.LifeformChangeListener
+import com.worldbuilder.mapgame.models.lifeform.LifeformType
 import com.worldbuilder.mapgame.repositories.SessionRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -24,7 +30,7 @@ class GameViewModel(private val repo: SessionRepository) : ViewModel() {
 
     private val mapGenerator = MapGenerator()
     private var tilemap: Array<Array<Tile>>? = null
-    private val lifeFormID = 1
+    private var lifeFormID = 1
 
     private var lifeformChangeListener: LifeformChangeListener? = null
 
@@ -93,6 +99,62 @@ class GameViewModel(private val repo: SessionRepository) : ViewModel() {
         startTimer()
     }
 
+    @Suppress("unused")
+    fun createLifeform(lifeformType: LifeformType, atPositions: List<Position>) {
+        lifeFormID++
+        _world.value?.apply {
+            darwinPoints -= 300
+            val plantRes = Lifeforms.getRandomPlantDrawable()
+            val animalRes = Lifeforms.getRandomAnimalDrawable()
+
+            for (position1 in atPositions) {
+                when (lifeformType) {
+                    LifeformType.Plant -> {
+                        val plant = createPlant(position1, plantRes)
+                        lifeformChangeListener?.onLifeFormCreated(plant)
+                        //addLifeformImageView(plant1)
+                        addLifeform(plant)
+                    }
+
+                    LifeformType.Carnivore, LifeformType.Herbivore -> {
+                        val animal = createAnimal(position1, animalRes)
+                        animal.foodType = lifeformType
+                        lifeformChangeListener?.onLifeFormCreated(animal)
+//                        addLifeformImageView(animal)
+                        addLifeform(animal)
+                    }
+
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    @Suppress("UNNECESSARY_NOT_NULL_ASSERTION")
+    fun createWorld(
+        width: Int,
+        height: Int,
+        waterFrequency: Float,
+        mountFrequency: Float
+    ) {
+        viewModelScope.launch {
+            _world.value?.resetLifeforms()
+
+            onCreateWorldStarted()
+            val params = CreateWorldParams(width, height, waterFrequency, mountFrequency)
+            when (val result = repo.createWorld(params)) {
+                is ExecutionResult.Success -> {
+                    _world.value = result.data.first!!
+                    _bitmap.value = result.data.second!!
+                }
+
+                is ExecutionResult.Error -> handleError(result)
+            }
+            onCreateWorldFinished()
+        }
+    }
+
+    @Suppress("UNNECESSARY_NOT_NULL_ASSERTION")
     fun load() {
         viewModelScope.launch {
             onCreateWorldStarted()
@@ -109,10 +171,8 @@ class GameViewModel(private val repo: SessionRepository) : ViewModel() {
 
                 when (val result = repo.loadSavedGame(it)) {
                     is ExecutionResult.Success -> {
-                        result.data.let { w ->
-                            w.setLifeformChangeListener(lifeformChangeListener)
-                            _world.value = w
-                        }
+                        result.data.setLifeformChangeListener(lifeformChangeListener)
+                        _world.value = result.data!!
                     }
 
                     is ExecutionResult.Error -> handleError(result)
@@ -120,6 +180,18 @@ class GameViewModel(private val repo: SessionRepository) : ViewModel() {
                 onCreateWorldFinished()
             }
         }
+    }
+
+    private fun createPlant(position: Position, plantResId: Int): Plant {
+        val name = "plant_$lifeFormID"
+        return Plant(
+            name, .5f, 50, position, 10, 5, plantResId, 30, lifeFormID
+        )
+    }
+
+    private fun createAnimal(position: Position, animalResId: Int): Animal {
+        val name = "animal_$lifeFormID"
+        return Animal(name, 5, .5f, 50, position, 10, animalResId, 30, lifeFormID)
     }
 
     private fun handleError(result: ExecutionResult.Error) {

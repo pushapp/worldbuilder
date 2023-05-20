@@ -2,9 +2,12 @@ package com.worldbuilder.mapgame.repositories
 
 import android.content.Context
 import android.graphics.Bitmap
+import com.worldbuilder.mapgame.MapGenerator
+import com.worldbuilder.mapgame.MapUtils
 import com.worldbuilder.mapgame.SaveGame
 import com.worldbuilder.mapgame.Tile
 import com.worldbuilder.mapgame.World
+import com.worldbuilder.mapgame.models.CreateWorldParams
 import com.worldbuilder.mapgame.models.ExecutionResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -72,5 +75,35 @@ class LocalSessionRepository(private val applicationContext: Context) : SessionR
                 ExecutionResult.Error(e)
             }
         }
+    }
+
+    override suspend fun createWorld(params: CreateWorldParams): ExecutionResult<Pair<World, Bitmap>> {
+        return withContext(Dispatchers.IO) {
+            val mapGenerator = MapGenerator()
+            try {
+                val rawMap = mapGenerator.generateRandomMap(params)
+                val bm = createWorldBitmap(mapGenerator, rawMap, params)
+
+                val map = MapUtils.reduceTileArray(rawMap, MapUtils.tileMapDivisor)
+                val world = World(map)
+
+                ExecutionResult.Success(world to bm)
+            } catch (e: Exception) {
+                ExecutionResult.Error(e)
+            }
+        }
+    }
+
+    private fun createWorldBitmap(
+        generator: MapGenerator,
+        tiles: Array<Array<Tile>>,
+        params: CreateWorldParams
+    ): Bitmap = generator.generateRandomMapBitmap(
+        params.width,
+        params.height,
+        Tile.getTileSize(),
+        tiles
+    ).also { bm ->
+        SaveGame.saveBitmapToInternalStorage(applicationContext, bm, SaveGame.BITMAPFILE)
     }
 }

@@ -23,10 +23,12 @@ import com.worldbuilder.mapgame.databinding.ActivityMainBinding;
 import com.worldbuilder.mapgame.models.ItemCreationParams;
 import com.worldbuilder.mapgame.models.Position;
 import com.worldbuilder.mapgame.models.lifeform.LifeformChangeListener;
+import com.worldbuilder.mapgame.models.lifeform.LifeformType;
 import com.worldbuilder.mapgame.repositories.LocalSessionRepository;
 import com.worldbuilder.mapgame.repositories.SessionRepository;
 import com.worldbuilder.mapgame.ui.dialogs.CreatePlantOrAnimalDialog;
 import com.worldbuilder.mapgame.ui.dialogs.CustomizeWorldDialog;
+import com.worldbuilder.mapgame.ui.dialogs.CustomizeWorldDialogListener;
 import com.worldbuilder.mapgame.ui.dialogs.MapClickDialog;
 import com.worldbuilder.mapgame.ui.dialogs.SimpleAddLifeform;
 import com.worldbuilder.mapgame.utils.LifeformUtils;
@@ -34,14 +36,13 @@ import com.worldbuilder.mapgame.viewmodels.GameViewModel;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import kotlin.Unit;
 
 public class MainActivity extends AppCompatActivity
         implements CreatePlantOrAnimalDialog.CreatePlantOrAnimalDialogListener,
-        CustomizeWorldDialog.CustomizeWorldDialogListener,
+        CustomizeWorldDialogListener,
         SimpleAddLifeform.AddLifeformClickListener,
         LifeformChangeListener {
 
@@ -91,8 +92,7 @@ public class MainActivity extends AppCompatActivity
 
         if (tilemap == null) {
             //no Saved game... launch dialog to create new game
-            CustomizeWorldDialog customizeWorldDialog = new CustomizeWorldDialog();
-            customizeWorldDialog.show(getSupportFragmentManager(), "customize_world_dialog");
+            showCreateNewWorldDialog();
         } else {
             //There is game saved. load it
             Bitmap bitmap = SaveGame.loadBitmapFromInternalStorage(this, SaveGame.BITMAPFILE);
@@ -103,12 +103,14 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onResume() {
         super.onResume();
+        viewModel.setLifeformChangeListener(this);
         viewModel.startTimer();
         Log.d("Debug", "onResume() called");
     }
 
     @Override
     protected void onStop() {
+        viewModel.setLifeformChangeListener(null);
         viewModel.stopTimer();
         super.onStop();
     }
@@ -121,14 +123,10 @@ public class MainActivity extends AppCompatActivity
         updateDarwinTV();
     }
 
-    private void addLifeformImageView(Lifeform lifeform) {
-        ImageView imageView = LifeformUtils.INSTANCE.createLifeformImageView(lifeform, this);
-        binding.lifeFormContainer.addView(imageView);
-    }
-
     private void updateDarwinTV() {
         int points = world.getDarwinPoints();
-        binding.dpoints.setText(String.format(Locale.getDefault(), "$%d Darwin", points));
+        String pointsStr = getString(R.string.darwin_points, points);
+        binding.dpoints.setText(pointsStr);
     }
 
     @Override
@@ -142,7 +140,6 @@ public class MainActivity extends AppCompatActivity
         int propagationRate = (params.propagationRateProgress / 20) + 1;
         int elevationHabitat = (params.elevationProgress * MapUtils.getMaxElevation(tilemap)) / 100; //adjust elevation meter to the elevation of the map
         int seedingDist = (params.seedingDistanceProgress / 5) + 1;
-        String foodType = params.selectedFoodType;
         int speed = (params.seedSpeedProgress / 20) + 1;
         // Get values from other input fields
 
@@ -168,7 +165,7 @@ public class MainActivity extends AppCompatActivity
                     world.addLifeform(plant1);
                 } else {
                     Animal animal = new Animal("animal_" + lifeFormID, speed, .5f, lifespan, position1, propagationRate, animalRes, elevationHabitat, lifeFormID);
-                    animal.setFoodType(foodType);
+                    animal.setFoodType(params.selectedLifeform);
                     addLifeformImageView(animal);
                     world.addLifeform(animal);
                 }
@@ -289,9 +286,14 @@ public class MainActivity extends AppCompatActivity
         });
 
         binding.resetButton.setOnClickListener(view -> {
-            CustomizeWorldDialog customizeWorldDialog1 = new CustomizeWorldDialog();
-            customizeWorldDialog1.show(getSupportFragmentManager(), "customize_world_dialog");
+            showCreateNewWorldDialog();
         });
+    }
+
+    private void showCreateNewWorldDialog() {
+        CustomizeWorldDialog customizeWorldDialog = new CustomizeWorldDialog();
+        customizeWorldDialog.setOnCreateWorldListener(this);
+        customizeWorldDialog.show(getSupportFragmentManager(), "customize_world_dialog");
     }
 
     private Unit showAddLifeformDialog() {
@@ -313,8 +315,12 @@ public class MainActivity extends AppCompatActivity
         return Unit.INSTANCE;
     }
 
+    /**
+     * @deprecated "should be used GameViewModel.createLifeform() method instead"
+     */
+    @Deprecated
     @Override
-    public void onLifeformAdded(int nodeId) {
+    public void onLifeformAdded(@NonNull LifeformType lifeformType) {
         List<Position> positions = MapUtils.generateSurroundingPositions(lastTouchedPosition, tilemap, false, 1, 3);
 
         List<Position> selectedPositions = MapUtils.getRandomPositions(positions, 5);
@@ -327,24 +333,15 @@ public class MainActivity extends AppCompatActivity
             int plantRes = getRandomPlantDrawable();
             int animalRes = getRandomAnimalDrawable();
             for (Position position1 : selectedPositions) {
-                switch (nodeId) {
-                    case SimpleAddLifeform.PLANT:
-                        Plant plant1 = new Plant("plant_" + lifeFormID, .5f, 50, position1, 10, 5, plantRes, 30, lifeFormID);
-                        addLifeformImageView(plant1);
-                        world.addLifeform(plant1);
-                        break;
-                    case SimpleAddLifeform.HERBIVORE:
-                        Animal animal = new Animal("animal_" + lifeFormID, 5, .5f, 50, position1, 10, animalRes, 30, lifeFormID);
-                        animal.setFoodType("Herbivore");
-                        addLifeformImageView(animal);
-                        world.addLifeform(animal);
-                        break;
-                    case SimpleAddLifeform.CARNIVORE:
-                        Animal carnivore = new Animal("animal_" + lifeFormID, 5, .5f, 50, position1, 10, animalRes, 30, lifeFormID);
-                        carnivore.setFoodType("Carnivore");
-                        addLifeformImageView(carnivore);
-                        world.addLifeform(carnivore);
-                        break;
+                if (lifeformType == LifeformType.Plant) {
+                    Plant plant1 = new Plant("plant_" + lifeFormID, .5f, 50, position1, 10, 5, plantRes, 30, lifeFormID);
+                    addLifeformImageView(plant1);
+                    world.addLifeform(plant1);
+                } else {
+                    Animal animal = new Animal("animal_" + lifeFormID, 5, .5f, 50, position1, 10, animalRes, 30, lifeFormID);
+                    animal.setFoodType(lifeformType);
+                    addLifeformImageView(animal);
+                    world.addLifeform(animal);
                 }
             }
         }
@@ -355,8 +352,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onLifeFormCreated(@NonNull Lifeform lifeform) {
-        ImageView newPlantImageView = LifeformUtils.INSTANCE.createLifeformImageView(lifeform, this);
-        binding.lifeFormContainer.addView(newPlantImageView);
+        addLifeformImageView(lifeform);
     }
 
     @Override
@@ -377,5 +373,10 @@ public class MainActivity extends AppCompatActivity
 
             imageView.setLayoutParams(lp);
         }
+    }
+
+    private void addLifeformImageView(Lifeform lifeform) {
+        ImageView imageView = LifeformUtils.INSTANCE.createLifeformImageView(lifeform, this);
+        binding.lifeFormContainer.addView(imageView);
     }
 }

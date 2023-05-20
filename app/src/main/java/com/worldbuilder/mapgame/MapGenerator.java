@@ -11,6 +11,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
+import com.worldbuilder.mapgame.models.CreateWorldParams;
 import com.worldbuilder.mapgame.models.map.TerrainType;
 
 public class MapGenerator {
@@ -35,6 +36,11 @@ public class MapGenerator {
         }
 
         return mapBitmap;
+    }
+
+    public Tile[][] generateRandomMap(CreateWorldParams params) {
+        return generateRandomMap(params.getWidth(), params.getHeight(),
+                params.getWaterFrequency(), params.getMountainFrequency());
     }
 
     public Tile[][] generateRandomMap(int mapWidth, int mapHeight, float waterFreq, float mountainFreq) {

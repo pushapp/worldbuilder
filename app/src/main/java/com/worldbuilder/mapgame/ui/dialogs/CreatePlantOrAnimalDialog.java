@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.SeekBar;
 
 import androidx.annotation.NonNull;
@@ -17,6 +18,7 @@ import com.worldbuilder.mapgame.Lifeforms;
 import com.worldbuilder.mapgame.R;
 import com.worldbuilder.mapgame.databinding.DialogAddLifeformBinding;
 import com.worldbuilder.mapgame.models.ItemCreationParams;
+import com.worldbuilder.mapgame.models.lifeform.LifeformType;
 import com.worldbuilder.mapgame.ui.OnItemSelectedSimpleListener;
 import com.worldbuilder.mapgame.ui.OnSeekBarSimpleChangeListener;
 
@@ -142,15 +144,19 @@ public class CreatePlantOrAnimalDialog extends AppCompatDialog {
         });
 
         //food type
+        ArrayAdapter<LifeformType> adapter = new ArrayAdapter<>(getContext(),
+                android.R.layout.simple_list_item_1, LifeformType.Companion.animalLifeforms());
+        binding.foodTypeSpinner.setAdapter(adapter);
+
         binding.foodTypeSpinner.setOnItemSelectedListener(new OnItemSelectedSimpleListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                params.selectedFoodType = binding.foodTypeSpinner.getSelectedItem().toString();
+                params.selectedLifeform = (LifeformType) binding.foodTypeSpinner.getSelectedItem();
 
-                if (params.selectedFoodType.equals("Herbivore")) {
+                if (params.selectedLifeform == LifeformType.Herbivore) {
                     params.foodCost = 1000;
                 }
-                if (params.selectedFoodType.equals("Carnivore")) {
+                if (params.selectedLifeform == LifeformType.Carnivore) {
                     params.foodCost = 10000;
                 }
                 params.cost = params.foodCost + params.propCost + params.speedCost + params.lifespanCost;

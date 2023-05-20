@@ -16,8 +16,7 @@ class AddAnimalNodeView(context: Context, attrs: AttributeSet) : LinearLayout(co
     private val nodeDescription: TextView
 
     init {
-        val inflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        inflater.inflate(R.layout.tech_tree_node_view, this, true)
+        LayoutInflater.from(context).inflate(R.layout.tech_tree_node_view, this, true)
 
         nodeIcon = findViewById(R.id.node_icon)
         nodeTitle = findViewById(R.id.node_title)

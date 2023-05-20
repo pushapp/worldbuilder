@@ -6,7 +6,7 @@
     android:background="@drawable/rounded_dialog"
     android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="@dimen/medium">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -191,7 +191,6 @@
                     android:id="@+id/foodTypeSpinner"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:entries="@array/food_types"
                     android:progress="50" />
             </LinearLayout>
 
@@ -199,7 +198,7 @@
                 android:id="@+id/buttonsLL"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginVertical="16dp"
+                android:layout_marginVertical="@dimen/medium"
                 android:orientation="horizontal"
                 android:visibility="gone"
                 tools:visibility="visible">

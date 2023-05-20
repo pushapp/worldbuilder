@@ -54,6 +54,10 @@ public class World implements LifeformChangeListener {
         this.animals = animals;
     }
 
+    public Tile[][] getMap() {
+        return map;
+    }
+
     public synchronized void update(int steps) {
         Log.d(TAG, "incrementTime");
         for (int step = 0; step < steps; step++) {
