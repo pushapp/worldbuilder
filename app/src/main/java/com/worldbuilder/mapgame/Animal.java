@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.worldbuilder.mapgame.models.Position;
 import com.worldbuilder.mapgame.models.lifeform.LifeformChangeListener;
+import com.worldbuilder.mapgame.models.lifeform.LifeformType;
 import com.worldbuilder.mapgame.models.map.TerrainType;
 
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ public class Animal extends Lifeform {
     private int eyesight = 40;
     private final int speed;
     private double energy;
-    private String foodType = "Herbivore";
+    private LifeformType foodType = LifeformType.Herbivore;
     private boolean isSwimmer = false;
 
     private int propCounter = 1;
@@ -62,11 +63,11 @@ public class Animal extends Lifeform {
         this.eyesight = eyesight;
     }
 
-    public String getFoodType() {
+    public LifeformType getFoodType() {
         return foodType;
     }
 
-    public void setFoodType(String foodType) {
+    public void setFoodType(LifeformType foodType) {
         this.foodType = foodType;
     }
 
@@ -135,24 +136,26 @@ public class Animal extends Lifeform {
                 Lifeform objectInQuestion = map[position.getX()][position.getY()].getInHabitant();
                 //hungry. look for food
                 if (energy < 40) {
-                    if (foodType.equals("Herbivore")) {
+                    if (foodType == LifeformType.Herbivore) {
                         if (objectInQuestion instanceof Plant) {
                             targetedPos = MapUtils.findPositionTowardsTarget(getPosition(), position, speed);
                         }
                     }
-                    if (foodType.equals("Carnivore")) {
+                    if (foodType == LifeformType.Carnivore) {
                         if (objectInQuestion instanceof Animal) {
                             targetedPos = MapUtils.findPositionTowardsTarget(getPosition(), position, speed);
                         }
                     }
-                    if (foodType.equals("Omnivore")) {
+                    if (foodType == LifeformType.Omnivore) {
                         if (objectInQuestion != null) {
                             targetedPos = MapUtils.findPositionTowardsTarget(getPosition(), position, speed);
                         }
                     }
                 }
 
-                if (objectInQuestion instanceof Animal && ((Animal) objectInQuestion).getFoodType().equals("Carnivore") && objectInQuestion.getLifeFormID() != getLifeFormID()) {
+                if (objectInQuestion instanceof Animal
+                        && ((Animal) objectInQuestion).getFoodType() == LifeformType.Carnivore
+                        && objectInQuestion.getLifeFormID() != getLifeFormID()) {
                     //run away from predator
                     targetedPos = MapUtils.findPositionAwayFromTarget(this.getPosition(), position, speed);
                     Log.d("runAwayPos", "Run Away Pos: X = " + targetedPos.getX() + "Y = " + targetedPos.getY());
@@ -220,18 +223,18 @@ public class Animal extends Lifeform {
     public void eat(World world) {
 
         List<Lifeform> nearbyEdibles = new ArrayList<>();
-        if (foodType.equals("Herbivore")) {
+        if (foodType == LifeformType.Herbivore) {
             nearbyEdibles.addAll(world.getNearbyPlants(getPosition(), 1)); // Adjust the value to control the search range
         }
-        if (foodType.equals("Carnivore")) {
+        if (foodType == LifeformType.Carnivore) {
             List<Animal> animals = world.getNearbyAnimals(getPosition(), 1);
             for (Animal animal : animals) {
-                if (animal.foodType.equals("Herbivore")) {
+                if (animal.foodType == LifeformType.Herbivore) {
                     nearbyEdibles.add(animal);
                 }
             }
         }
-        if (foodType.equals("Omnivore")) {
+        if (foodType == LifeformType.Omnivore) {
             nearbyEdibles.addAll(world.getNearbyAnimals(getPosition(), 1));
             nearbyEdibles.addAll(world.getNearbyPlants(getPosition(), 1)); // Adjust the value to control the search range
         }

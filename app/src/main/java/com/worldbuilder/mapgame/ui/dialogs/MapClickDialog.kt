@@ -1,10 +1,7 @@
 package com.worldbuilder.mapgame.ui.dialogs
 import android.content.Context
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.animation.Animation
-import android.view.animation.ScaleAnimation
-import android.widget.FrameLayout
 import android.widget.PopupWindow
 import com.worldbuilder.mapgame.databinding.DialogMapClickBinding
 import com.worldbuilder.mapgame.models.Position
@@ -16,8 +13,14 @@ class MapClickDialog(
 ) {
     private lateinit var popupWindow: PopupWindow
     private lateinit var binding : DialogMapClickBinding
+    private var shown = false
+
+    fun isShown(): Boolean = shown
 
     fun showPopupWindow(position : Position) {
+        if (shown) return
+
+        shown = true
         // Inflate the popup layout
         binding = DialogMapClickBinding.inflate(LayoutInflater.from(context))
 
@@ -50,8 +53,16 @@ class MapClickDialog(
         binding.root.startAnimation(openAnimation)
     }
 
+    fun closePopup() {
+        if (this::binding.isInitialized && shown) {
+            closePopupWindow(binding)
+        }
+    }
+
 
     private fun closePopupWindow(binding: DialogMapClickBinding) {
+        if (!shown) return
+
         val closeAnimation = Animations().closeAnimation()
         binding.root.startAnimation(closeAnimation)
 
@@ -59,8 +70,10 @@ class MapClickDialog(
             override fun onAnimationStart(animation: Animation) {}
             override fun onAnimationEnd(animation: Animation) {
                 popupWindow.dismiss()
+                shown = false
             }
             override fun onAnimationRepeat(animation: Animation) {}
         })
+        shown = false
     }
 }

@@ -1,5 +1,7 @@
 package com.worldbuilder.mapgame.models;
 
+import com.worldbuilder.mapgame.models.lifeform.LifeformType;
+
 public class ItemCreationParams {
     public int seedDistCost = 50;
     public int lifespanCost = 50;
@@ -14,7 +16,7 @@ public class ItemCreationParams {
     public int seedingDistanceProgress = 50;
     public int seedSpeedProgress = 50;
 
-    public String selectedFoodType = "";
+    public LifeformType selectedLifeform = LifeformType.Plant;
 
     //TODO: complete this part (not implemented in original code)
     public int elevationProgress = 50;
